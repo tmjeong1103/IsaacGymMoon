@@ -15,7 +15,7 @@ from gym import spaces
 from isaacgym import gymapi
 from isaacgym import gymtorch
 
-from .amp.humanoid_amp_base import HumanoidAMPBase, dof_to_obs
+from .amp.atlas_amp_base import AtlasAMPBase, dof_to_obs    # modified for Atlas
 from .amp.utils_amp import gym_util
 from .amp.utils_amp.motion_lib import MotionLib
 
@@ -23,10 +23,11 @@ from isaacgym.torch_utils import *
 from isaacgymenvs.utils.torch_jit_utils import *
 
 
-NUM_AMP_OBS_PER_STEP = 13 + 52 + 28 + 12 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
+# modified for Atlas
+NUM_AMP_OBS_PER_STEP = 13 + 29 + 29 + 12 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 
 
-class HumanoidAMP(HumanoidAMPBase):
+class AtlasAMP(AtlasAMPBase):
 
     class StateInit(Enum):
         Default = 0
@@ -38,7 +39,7 @@ class HumanoidAMP(HumanoidAMPBase):
         self.cfg = cfg
 
         state_init = cfg["env"]["stateInit"]
-        self._state_init = HumanoidAMP.StateInit[state_init]
+        self._state_init = AtlasAMP.StateInit[state_init]
         self._hybrid_init_prob = cfg["env"]["hybridInitProb"]
         self._num_amp_obs_steps = cfg["env"]["numAMPObsSteps"]
         assert(self._num_amp_obs_steps >= 2)
@@ -129,13 +130,14 @@ class HumanoidAMP(HumanoidAMPBase):
         self._init_amp_obs(env_ids)
         return
 
+    # modified for Atlas
     def _reset_actors(self, env_ids):
-        if (self._state_init == HumanoidAMP.StateInit.Default):
+        if (self._state_init == AtlasAMP.StateInit.Default):
             self._reset_default(env_ids)
-        elif (self._state_init == HumanoidAMP.StateInit.Start
-              or self._state_init == HumanoidAMP.StateInit.Random):
+        elif (self._state_init == AtlasAMP.StateInit.Start
+              or self._state_init == AtlasAMP.StateInit.Random):
             self._reset_ref_state_init(env_ids)
-        elif (self._state_init == HumanoidAMP.StateInit.Hybrid):
+        elif (self._state_init == AtlasAMP.StateInit.Hybrid):
             self._reset_hybrid_state_init(env_ids)
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
@@ -160,14 +162,15 @@ class HumanoidAMP(HumanoidAMPBase):
         self._reset_default_env_ids = env_ids
         return
 
+    # modified for Atlas
     def _reset_ref_state_init(self, env_ids):
         num_envs = env_ids.shape[0]
         motion_ids = self._motion_lib.sample_motions(num_envs)
         
-        if (self._state_init == HumanoidAMP.StateInit.Random
-            or self._state_init == HumanoidAMP.StateInit.Hybrid):
+        if (self._state_init == AtlasAMP.StateInit.Random
+            or self._state_init == AtlasAMP.StateInit.Hybrid):
             motion_times = self._motion_lib.sample_time(motion_ids)
-        elif (self._state_init == HumanoidAMP.StateInit.Start):
+        elif (self._state_init == AtlasAMP.StateInit.Start):
             motion_times = np.zeros(num_envs)
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))

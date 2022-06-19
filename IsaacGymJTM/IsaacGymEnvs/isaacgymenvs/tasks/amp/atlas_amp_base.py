@@ -38,15 +38,32 @@ from isaacgym.torch_utils import *
 from isaacgymenvs.utils.torch_jit_utils import *
 from ..base.vec_task import VecTask
 
-DOF_BODY_IDS = [1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14]
-DOF_OFFSETS = [0, 3, 6, 9, 10, 13, 14, 17, 18, 21, 24, 25, 28]
-NUM_OBS = 13 + 52 + 28 + 12 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
+# [Atlas ID information]
+# 0 : pelvis (no DOF)
+# 1 ~ 3 : torso
+# 4 ~ 10 : left arm
+# 11 ~ 17 : right arm
+# 18 ~ 21 : left & right camera (no DOF)
+# 22 ~ 27 : left reg
+# 28 ~ 33 : right reg
+DOF_BODY_IDS    = [1, 2, 3,
+                    4, 5, 6, 7, 8, 9, 10,
+                    11, 12, 13, 14, 15, 16, 17,
+                    22, 23, 24, 25, 26, 27,
+                    28, 29, 30, 31, 32, 33
+                    ]    # body idx which have DOF, not include root & camera
+DOF_OFFSETS     = [0, 1, 2, 3, 
+                    4, 5, 6, 7, 8, 9, 10,
+                    11, 12, 13, 14, 15, 16, 17,
+                    18, 19, 20, 21, 22, 23,
+                    24, 25, 26, 27, 28, 29]  # joint number offset of each body
+NUM_OBS = 13 + 29 + 29 + 12 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 29    #from mjcf file (atlas_v5.xml actuator)
 
 
-KEY_BODY_NAMES = ["right_hand", "left_hand", "right_foot", "left_foot"]
+KEY_BODY_NAMES = ["r_hand", "l_hand", "r_foot", "l_foot"]
 
-class HumanoidAMPBase(VecTask):
+class AtlasAMPBase(VecTask):
 
     def __init__(self, config, sim_device, graphics_device_id, headless):
         self.cfg = config
@@ -103,8 +120,8 @@ class HumanoidAMPBase(VecTask):
         self._dof_vel = self._dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
 
         self._initial_dof_pos = torch.zeros_like(self._dof_pos, device=self.device, dtype=torch.float)
-        right_shoulder_x_handle = self.gym.find_actor_dof_handle(self.envs[0], self.humanoid_handles[0], "right_shoulder_x")
-        left_shoulder_x_handle = self.gym.find_actor_dof_handle(self.envs[0], self.humanoid_handles[0], "left_shoulder_x")
+        right_shoulder_x_handle = self.gym.find_actor_dof_handle(self.envs[0], self.humanoid_handles[0], "r_arm_shx")   # modified for Atlas
+        left_shoulder_x_handle = self.gym.find_actor_dof_handle(self.envs[0], self.humanoid_handles[0], "l_arm_shx")    # modified for Atlas
         self._initial_dof_pos[:, right_shoulder_x_handle] = 0.5 * np.pi
         self._initial_dof_pos[:, left_shoulder_x_handle] = -0.5 * np.pi
 
@@ -174,7 +191,7 @@ class HumanoidAMPBase(VecTask):
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../assets')
-        asset_file = "mjcf/amp_humanoid.xml"
+        asset_file = "mjcf/atlas_v5.xml"    # modified for Atlas
 
         if "asset" in self.cfg["env"]:
             #asset_root = self.cfg["env"]["asset"].get("assetRoot", asset_root)
@@ -190,8 +207,8 @@ class HumanoidAMPBase(VecTask):
         motor_efforts = [prop.motor_effort for prop in actuator_props]
         
         # create force sensors at the feet
-        right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "right_foot")
-        left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "left_foot")
+        right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "r_foot") # modified for Atlas
+        left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "l_foot")   # modified for Atlas
         sensor_pose = gymapi.Transform()
 
         self.gym.create_asset_force_sensor(humanoid_asset, right_foot_idx, sensor_pose)
@@ -222,7 +239,7 @@ class HumanoidAMPBase(VecTask):
                 self.sim, lower, upper, num_per_row
             )
             contact_filter = 0
-            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "humanoid", i, contact_filter, 0)
+            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 

@@ -26,8 +26,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-from isaacgymenvs.tasks.atlas import Atlas
+from tasks.atlas_amp import AtlasAMP
+from tasks.atlas import Atlas
 from tasks.allegro_hand import AllegroHand
 from tasks.ant import Ant
 from tasks.anymal import Anymal
@@ -44,6 +44,7 @@ from tasks.trifinger import Trifinger
 
 # Mappings from strings to environments
 isaacgym_task_map = {
+    "AtlasAMP": AtlasAMP,
     "Atlas": Atlas,
     "AllegroHand": AllegroHand,
     "Ant": Ant,
