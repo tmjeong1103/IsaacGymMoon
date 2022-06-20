@@ -1,0 +1,28 @@
+{
+    "source_motion": "data/kickoff_walk.npy",
+    "target_motion_path": "data/kickoff_walk_atlas.npy",
+    "source_tpose": "data/cmu_tpose.npy",
+    "target_tpose": "data/atlas_tpose.npy",
+    "joint_mapping": {
+         "Hips": "",
+         "LeftUpLeg": "",
+         "LeftLeg": "",
+         "LeftFoot": "",
+         "RightUpLeg": "",
+         "RightLeg": "",
+         "RightFoot": "",
+         "Spine1": "",
+         "Head": "",
+         "LeftArm": "",
+         "LeftForeArm": "",
+         "LeftHand": "",
+         "RightArm": "",
+         "RightForeArm": "",
+         "RightHand": ""
+    },
+    "rotation": [0, 0, 0.7071068, 0.7071068],
+    "scale": 0.056444,
+	"root_height_offset": 0.05,
+	"trim_frame_beg": 75,
+	"trim_frame_end": 372
+}

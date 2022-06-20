@@ -469,4 +469,3 @@ def euclidean_to_transform(transformation_matrix):
         ),
         t=euclidean_translation(transformation_matrix),
     )
-
