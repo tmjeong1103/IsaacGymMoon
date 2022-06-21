@@ -50,19 +50,21 @@ Data required for retargeting are stored in a retarget config dictionary as a js
 VISUALIZE = False
 
 def project_joints(motion):
-    right_upper_arm_id = motion.skeleton_tree._node_indices["right_upper_arm"]
-    right_lower_arm_id = motion.skeleton_tree._node_indices["right_lower_arm"]
-    right_hand_id = motion.skeleton_tree._node_indices["right_hand"]
-    left_upper_arm_id = motion.skeleton_tree._node_indices["left_upper_arm"]
-    left_lower_arm_id = motion.skeleton_tree._node_indices["left_lower_arm"]
-    left_hand_id = motion.skeleton_tree._node_indices["left_hand"]
+    right_upper_arm_id = motion.skeleton_tree._node_indices["r_uarm"]
+    right_lower_arm_id = motion.skeleton_tree._node_indices["r_larm"]
+    right_hand_id = motion.skeleton_tree._node_indices["r_hand"]
+
+    left_upper_arm_id = motion.skeleton_tree._node_indices["l_uarm"]
+    left_lower_arm_id = motion.skeleton_tree._node_indices["l_larm"]
+    left_hand_id = motion.skeleton_tree._node_indices["l_hand"]
     
-    right_thigh_id = motion.skeleton_tree._node_indices["right_thigh"]
-    right_shin_id = motion.skeleton_tree._node_indices["right_shin"]
-    right_foot_id = motion.skeleton_tree._node_indices["right_foot"]
-    left_thigh_id = motion.skeleton_tree._node_indices["left_thigh"]
-    left_shin_id = motion.skeleton_tree._node_indices["left_shin"]
-    left_foot_id = motion.skeleton_tree._node_indices["left_foot"]
+    right_thigh_id = motion.skeleton_tree._node_indices["r_uleg"]
+    right_shin_id = motion.skeleton_tree._node_indices["r_lleg"]
+    right_foot_id = motion.skeleton_tree._node_indices["r_foot"]
+
+    left_thigh_id = motion.skeleton_tree._node_indices["l_uleg"]
+    left_shin_id = motion.skeleton_tree._node_indices["l_lleg"]
+    left_foot_id = motion.skeleton_tree._node_indices["l_foot"]
     
     device = motion.global_translation.device
 
@@ -205,7 +207,7 @@ def project_joints(motion):
 
 def main():
     # load retarget config
-    retarget_data_path = "data/configs/retarget_cmu_to_amp.json"
+    retarget_data_path = "data/configs/retarget_cmu_to_atlas.json"
     with open(retarget_data_path) as f:
         retarget_data = json.load(f)
 

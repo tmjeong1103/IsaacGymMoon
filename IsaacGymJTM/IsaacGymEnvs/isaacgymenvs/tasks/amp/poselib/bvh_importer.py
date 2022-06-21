@@ -21,12 +21,13 @@ clip_str = (2 - len(clip)) * "0" + clip
 
 # workspace base path identification
 base = "{}/data/bvh/".format(os.getcwd())
-bvh_file = os.path.abspath("{}/{}/{}_{}.bvh".format(base,subject_str,subject_short,clip_str))
+bvh_file = "{}/data/bvh/02_03.bvh".format(os.getcwd())
+#bvh_file = os.path.abspath("{}/{}/{}_{}.bvh".format(base,subject_str,subject_short,clip_str))
 
 root_joint = "Hips"
 
 source_tpose = SkeletonState.from_file("data/cmu_tpose.npy")
-target_tpose = SkeletonState.from_file("data/amp_humanoid_tpose.npy")
+target_tpose = SkeletonState.from_file("data/atlas_tpose.npy")
 
 #a,b,c,d,e = bvh_to_array(bvh_file,root_joint="Hips",debug=True)
 
@@ -69,9 +70,9 @@ print(zero_pose.num_joints)
 
 plot_skeleton_state(zero_pose)
 plot_skeleton_state(source_tpose)
-#zero_pose.to_file("data/kick_tpose.npy")
-#print(motion)
-# plot_skeleton_state(motion.skeleton_tree)
-motion.to_file("data/kickoff_walk.npy")
+plot_skeleton_state(target_tpose)
+
+zero_pose.to_file("data/cmu_zero_pose.npy")
+motion.to_file("data/cmu_run_motion.npy")
 
 plot_skeleton_motion_interactive(motion)

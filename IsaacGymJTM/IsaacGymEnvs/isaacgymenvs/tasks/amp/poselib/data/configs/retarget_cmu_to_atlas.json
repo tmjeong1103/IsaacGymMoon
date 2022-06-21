@@ -1,28 +1,32 @@
 {
     "source_motion": "data/kickoff_walk.npy",
-    "target_motion_path": "data/kickoff_walk_atlas.npy",
-    "source_tpose": "data/cmu_tpose.npy",
+    "target_motion_path": "data/cmu_walk_retarget_to_atlas.npy",
+    "source_tpose": "data/cmu_zero_pose.npy",
     "target_tpose": "data/atlas_tpose.npy",
     "joint_mapping": {
-         "Hips": "",
-         "LeftUpLeg": "",
-         "LeftLeg": "",
-         "LeftFoot": "",
-         "RightUpLeg": "",
-         "RightLeg": "",
-         "RightFoot": "",
-         "Spine1": "",
-         "Head": "",
-         "LeftArm": "",
-         "LeftForeArm": "",
-         "LeftHand": "",
-         "RightArm": "",
-         "RightForeArm": "",
-         "RightHand": ""
+        "Hips": "pelvis",
+    
+        "LeftUpLeg": "l_uleg",
+        "LeftLeg": "l_lleg",
+        "LeftFoot": "l_foot",
+        
+        "RightUpLeg": "r_uleg",
+        "RightLeg": "r_lleg",
+        "RightFoot": "r_foot",
+
+        "Spine1": "utorso",
+        
+        "LeftArm": "l_uarm",
+        "LeftForeArm": "l_larm",
+        "LeftHand": "l_hand",
+        
+        "RightArm": "r_uarm",
+        "RightForeArm": "r_larm",
+        "RightHand": "r_hand"
     },
     "rotation": [0, 0, 0.7071068, 0.7071068],
-    "scale": 0.056444,
-	"root_height_offset": 0.05,
+    "scale": 0.5,
+	"root_height_offset": 0.01,
 	"trim_frame_beg": 75,
 	"trim_frame_end": 372
 }

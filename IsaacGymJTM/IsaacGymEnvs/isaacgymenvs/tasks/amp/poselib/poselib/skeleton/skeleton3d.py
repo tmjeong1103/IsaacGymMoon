@@ -1537,8 +1537,7 @@ class SkeletonMotion(SkeletonState):
         :type scale_to_target_skeleton: float
         :rtype: SkeletonMotion
         """
-        print(123)
-        #plot_skeleton_state(source_tpose)
+        plot_skeleton_state(source_tpose)
         return self.retarget_to(
             joint_mapping,
             source_tpose.local_rotation,

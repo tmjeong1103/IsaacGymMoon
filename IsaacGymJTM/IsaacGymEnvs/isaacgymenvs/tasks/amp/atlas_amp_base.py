@@ -57,7 +57,7 @@ DOF_OFFSETS     = [0, 1, 2, 3,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23,
                     24, 25, 26, 27, 28, 29]  # joint number offset of each body
-NUM_OBS = 13 + 29 + 29 + 12 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 11 + 29 + 29 + 12 + 25 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 29    #from mjcf file (atlas_v5.xml actuator)
 
 

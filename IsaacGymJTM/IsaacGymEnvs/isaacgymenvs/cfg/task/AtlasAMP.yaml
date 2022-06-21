@@ -20,14 +20,12 @@ env:
 
   localRootObs: False
   contactBodies: ["r_foot", "l_foot"]
-  terminationHeight: 0.5
+  terminationHeight: 1 #0.5
   enableEarlyTermination: True
 
   # animation files to learn from
   # these motions should use hyperparameters from HumanoidAMPPPO.yaml
-  motion_file: "amp_humanoid_walk.npy"
-  #motion_file: "amp_humanoid_run.npy"
-  #motion_file: "amp_humanoid_dance.npy"
+  motion_file: "cmu_walk_retarget_to_atlas.npy"
 
   # these motions should use hyperparameters from HumanoidAMPPPOLowGP.yaml
   #motion_file: "amp_humanoid_hop.npy"
