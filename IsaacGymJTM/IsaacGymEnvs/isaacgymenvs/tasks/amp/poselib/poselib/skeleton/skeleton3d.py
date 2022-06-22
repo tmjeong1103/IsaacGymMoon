@@ -30,13 +30,19 @@ import os
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from typing import List, Optional, Type, Dict
+import math
 
 import numpy as np
 import torch
 
 from ..core import *
 from .backend.fbx.fbx_read_wrapper import fbx_to_array
+from .backend.bvh.bvh_backend import bvh_to_array
 import scipy.ndimage.filters as filters
+
+from ..visualization.common import plot_skeleton_state, plot_skeleton_motion_interactive
+
+from bvh import Bvh
 
 
 class SkeletonTree(Serializable):
@@ -620,6 +626,11 @@ class SkeletonState(Serializable):
     def _to_state_vector(rot, rt):
         state_shape = rot.shape[:-2]
         vr = rot.reshape(*(state_shape + (-1,)))
+        #print(123123)
+        #print(state_shape)
+        #print(vr)
+        #print(*state_shape)
+        #print(rt.shape[-1:])
         vt = rt.broadcast_to(*state_shape + rt.shape[-1:]).reshape(
             *(state_shape + (-1,))
         )
@@ -665,6 +676,8 @@ class SkeletonState(Serializable):
         assert (
             r.dim() > 0
         ), "the rotation needs to have at least 1 dimension (dim = {})".format(r.dim)
+        #print(r)
+        #print(t)
         return cls(
             SkeletonState._to_state_vector(r, t),
             skeleton_tree=skeleton_tree,
@@ -822,6 +835,7 @@ class SkeletonState(Serializable):
         rotation_to_target_skeleton,
         scale_to_target_skeleton: float,
         z_up: bool = True,
+        source_skeleton_tree: "SkeletonTree" = None
     ) -> "SkeletonState":
         """ 
         Retarget the skeleton state to a target skeleton tree. This is a naive retarget
@@ -877,31 +891,59 @@ class SkeletonState(Serializable):
         :type scale_to_target_skeleton: float
         :rtype: SkeletonState
         """
-
+        # plot_skeleton_state(source_tpose)
         # STEP 0: Preprocess
-        source_tpose = SkeletonState.from_rotation_and_root_translation(
-            skeleton_tree=self.skeleton_tree,
-            r=source_tpose_local_rotation,
-            t=source_tpose_root_translation,
-            is_local=True,
-        )
+
+        if source_skeleton_tree is None:
+            print("-----------------------")
+            source_tpose = SkeletonState.from_rotation_and_root_translation(
+                skeleton_tree=self.skeleton_tree,
+                r=source_tpose_local_rotation,
+                t=source_tpose_root_translation,
+                is_local=True,
+            )
+        else:
+            print("entering alt")
+            #print(source_skeleton_tree)
+            #print(target_skeleton_tree)
+            source_tpose = SkeletonState.from_rotation_and_root_translation(
+                #skeleton_tree=source_skeleton_tree,
+                skeleton_tree=self.skeleton_tree,
+                r=source_tpose_local_rotation,
+                t=source_tpose_root_translation,
+                is_local=True,
+            )
+            plot_skeleton_state(source_tpose)
+
         target_tpose = SkeletonState.from_rotation_and_root_translation(
             skeleton_tree=target_skeleton_tree,
             r=target_tpose_local_rotation,
             t=target_tpose_root_translation,
             is_local=True,
         )
-
+        plot_skeleton_state(target_tpose)
         # STEP 1: Drop the irrelevant joints
         pairwise_translation = self._get_pairwise_average_translation()
         node_names = list(joint_mapping)
+        print("source")
+        #plot_skeleton_state(source_tpose)
+        #plot_skeleton_state(target_tpose)
+
+        # original
         new_skeleton_tree = self.skeleton_tree.keep_nodes_by_names(
             node_names, pairwise_translation
         )
+        print(14234)
+        print(self.skeleton_tree)
+        # plot_skeleton_state(new_skeleton_tree)
 
+        #plot_skeleton_state(source_tpose)
+        # from poselib.visualization.common import plot_skeleton_state, plot_skeleton_motion_interactive
         # TODO: combine the following steps before STEP 3
         source_tpose = source_tpose._transfer_to(new_skeleton_tree)
         source_state = self._transfer_to(new_skeleton_tree)
+
+        plot_skeleton_state(source_tpose)
 
         source_tpose = source_tpose._remapped_to(joint_mapping, target_skeleton_tree)
         source_state = source_state._remapped_to(joint_mapping, target_skeleton_tree)
@@ -1008,9 +1050,13 @@ class SkeletonState(Serializable):
         :type scale_to_target_skeleton: float
         :rtype: SkeletonState
         """
+        print("ENTRY")
         assert (
             len(source_tpose.shape) == 0 and len(target_tpose.shape) == 0
         ), "the retargeting script currently doesn't support vectorized operations"
+        # print(123)
+        # print("HI")
+        plot_skeleton_state(source_tpose)
         return self.retarget_to(
             joint_mapping,
             source_tpose.local_rotation,
@@ -1020,6 +1066,7 @@ class SkeletonState(Serializable):
             target_tpose.root_translation,
             rotation_to_target_skeleton,
             scale_to_target_skeleton,
+            #source_skeleton_tree=source_tpose.skeleton_tree
         )
 
 
@@ -1187,6 +1234,89 @@ class SkeletonMotion(SkeletonState):
                 ("fps", self.fps),
             ]
         )
+    
+    @classmethod
+    def from_bvh(
+        cls: Type["SkeletonMotion"],
+        bvh_file_path,
+        skeleton_tree=None,
+        is_local=True,
+        root_joint="",
+        root_trans_index=0, 
+        root_trans_channels=[],
+        channels=[],
+        *args,
+        **kwargs
+    ):
+        joint_names, joint_parents, transforms, root_trans, fps = bvh_to_array(bvh_file_path,root_joint=root_joint)
+        #print(root_trans)
+        #print(torch.from_numpy(root_trans))
+        #print(torch.from_numpy(root_trans))
+        # R1 = Rot.from_euler('zyx', [0.0,0.0,90.0], degrees=True).as_matrix()
+        
+        local_transform = euclidean_to_transform(
+            transformation_matrix=torch.from_numpy(
+                transforms
+                #np.swapaxes(np.array(transforms), -1, -2),
+            ).float()
+        )
+        local_rotation = transform_rotation(local_transform)
+        root_rot = local_rotation[:,0,:]
+        print(root_rot[0:10,:])
+
+        root_rot_np1 = torch.Tensor(np.array(root_rot.shape[0]*[[1/math.sqrt(2),0.0,0.0,1/math.sqrt(2)]]))
+        #root_rot_np2 = torch.Tensor(np.array(root_rot.shape[0]*[[0.0,0.0,0.0,1.0]]))
+        local_rotation[:,0,:] = quat_mul(root_rot_np1,root_rot)
+
+        print(root_rot_np1[0:10,:])
+
+        root_transformation = euclidean_to_transform(
+            transformation_matrix=torch.from_numpy(
+                root_trans
+            ).float())
+
+        root_translation = transform_translation(root_transformation).reshape(
+                -1, 3
+            )
+
+        # hack
+        # print(root_translation[0:10])
+        #root_translation = torch.zeros(root_translation.shape)
+        sample = torch.from_numpy(np.array(root_translation.shape[0]*[[1/math.sqrt(2),0.0,0.0,1/math.sqrt(2)]]))
+        #sample2 = torch.from_numpy(np.array(root_translation.shape[0]*[[0.0,0.0,0.0,1.0]]))
+        print(sample.shape)
+        print(root_translation.shape)
+        root_translation = quat_rotate(sample, root_translation)
+        #root_translation = quat_rotate(sample2, root_translation)
+
+        #print(root_translation)
+        joint_parents = torch.from_numpy(np.array(joint_parents)).int()
+
+        if skeleton_tree is None:
+            local_translation = transform_translation(local_transform).reshape(
+                -1, len(joint_parents), 3
+            )[0]
+            skeleton_tree = SkeletonTree(joint_names, joint_parents, local_translation)
+            print("Are we here")
+            
+        
+        skeleton_state = SkeletonState.from_rotation_and_root_translation(
+            skeleton_tree, r=local_rotation, t=root_translation, is_local=True
+        )
+        # plot_skeleton_state(skeleton_state)
+        # print(skeleton_tree)
+        #skeleton_state = cls(
+        #    torch.from_numpy(transforms),
+        #    skeleton_tree=skeleton_tree,
+        #    is_local=is_local,
+        #    fps=fps
+        #)
+
+        if not is_local:
+            skeleton_state = skeleton_state.global_repr()
+        return cls.from_skeleton_state(
+            skeleton_state=skeleton_state, fps=fps
+        )
 
     @classmethod
     def from_fbx(
@@ -1319,6 +1449,7 @@ class SkeletonMotion(SkeletonState):
         rotation_to_target_skeleton,
         scale_to_target_skeleton: float,
         z_up: bool = True,
+        source_skeleton_tree: "SkeletonTree" = None
     ) -> "SkeletonMotion":
         """ 
         Same as the one in :class:`SkeletonState`. This method discards all velocity information before
@@ -1366,6 +1497,7 @@ class SkeletonMotion(SkeletonState):
                 rotation_to_target_skeleton,
                 scale_to_target_skeleton,
                 z_up,
+                source_skeleton_tree
             ),
             self.fps,
         )
@@ -1405,6 +1537,7 @@ class SkeletonMotion(SkeletonState):
         :type scale_to_target_skeleton: float
         :rtype: SkeletonMotion
         """
+        plot_skeleton_state(source_tpose)
         return self.retarget_to(
             joint_mapping,
             source_tpose.local_rotation,
@@ -1415,5 +1548,6 @@ class SkeletonMotion(SkeletonState):
             rotation_to_target_skeleton,
             scale_to_target_skeleton,
             z_up,
+            source_skeleton_tree=source_tpose.skeleton_tree
         )
 

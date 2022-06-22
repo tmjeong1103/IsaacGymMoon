@@ -1,7 +1,7 @@
 {
-    "source_motion": "data/01_01_cmu.npy",
-    "target_motion_path": "data/01_01_cmu_amp.npy",
-    "source_tpose": "data/cmu_tpose.npy",
+    "source_motion": "data/cmu_run_motion.npy",
+    "target_motion_path": "data/cmu_run_motion_amp.npy",
+    "source_tpose": "data/cmu_zero_pose.npy",
     "target_tpose": "data/amp_humanoid_tpose.npy",
     "joint_mapping": {
          "Hips": "pelvis",
