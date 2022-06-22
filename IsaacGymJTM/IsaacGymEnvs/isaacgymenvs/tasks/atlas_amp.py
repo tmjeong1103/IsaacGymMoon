@@ -24,7 +24,7 @@ from isaacgymenvs.utils.torch_jit_utils import *
 
 
 # modified for Atlas
-NUM_AMP_OBS_PER_STEP = 11 + 29 + 29 + 12 + 25 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
+NUM_AMP_OBS_PER_STEP = 105 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 
 
 class AtlasAMP(AtlasAMPBase):

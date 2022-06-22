@@ -38,27 +38,20 @@ from isaacgym.torch_utils import *
 from isaacgymenvs.utils.torch_jit_utils import *
 from ..base.vec_task import VecTask
 
-# [Atlas ID information]
-# 0 : pelvis (no DOF)
-# 1 ~ 3 : torso
-# 4 ~ 10 : left arm
-# 11 ~ 17 : right arm
-# 18 ~ 21 : left & right camera (no DOF)
-# 22 ~ 27 : left reg
-# 28 ~ 33 : right reg
 DOF_BODY_IDS    = [1, 2, 3,
-                    4, 5, 6, 7, 8, 9, 10,
+                    4, 5, 6, 7, 8, 9,
+                    10,
                     11, 12, 13, 14, 15, 16, 17,
-                    22, 23, 24, 25, 26, 27,
-                    28, 29, 30, 31, 32, 33
-                    ]    # body idx which have DOF, not include root & camera
+                    18, 19, 20, 21, 22, 23, 
+                    24, 25, 26, 27, 28, 29
+                    ]    # body idx which have DOF, not include root
 DOF_OFFSETS     = [0, 1, 2, 3, 
                     4, 5, 6, 7, 8, 9, 10,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23,
-                    24, 25, 26, 27, 28, 29]  # joint number offset of each body
-NUM_OBS = 11 + 29 + 29 + 12 + 25 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
-NUM_ACTIONS = 29    #from mjcf file (atlas_v5.xml actuator)
+                    24, 25, 26, 27, 28]  # joint number offset of each body
+NUM_OBS = 105 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_ACTIONS = 28    #from mjcf file (atlas_v5.xml actuator)
 
 
 KEY_BODY_NAMES = ["r_hand", "l_hand", "r_foot", "l_foot"]
@@ -191,7 +184,7 @@ class AtlasAMPBase(VecTask):
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../assets')
-        asset_file = "mjcf/atlas_v5.xml"    # modified for Atlas
+        asset_file = "mjcf/atlas.xml"    # modified for Atlas
 
         if "asset" in self.cfg["env"]:
             #asset_root = self.cfg["env"]["asset"].get("assetRoot", asset_root)

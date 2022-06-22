@@ -20,7 +20,7 @@ env:
 
   localRootObs: False
   contactBodies: ["r_foot", "l_foot"]
-  terminationHeight: 1 #0.5
+  terminationHeight: 0.5
   enableEarlyTermination: True
 
   # animation files to learn from
@@ -32,7 +32,7 @@ env:
   #motion_file: "amp_humanoid_backflip.npy"
 
   asset:
-    assetFileName: "mjcf/atlas_v5.xml"
+    assetFileName: "mjcf/atlas.xml"
 
   plane:
     staticFriction: 1.0

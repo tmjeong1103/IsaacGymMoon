@@ -1054,8 +1054,8 @@ class SkeletonState(Serializable):
         assert (
             len(source_tpose.shape) == 0 and len(target_tpose.shape) == 0
         ), "the retargeting script currently doesn't support vectorized operations"
-        print(123)
-        print("HI")
+        # print(123)
+        # print("HI")
         plot_skeleton_state(source_tpose)
         return self.retarget_to(
             joint_mapping,
