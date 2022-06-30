@@ -20,19 +20,19 @@ env:
 
   localRootObs: False
   contactBodies: ["r_foot", "l_foot"]
-  terminationHeight: 0.5
+  terminationHeight: 0.4
   enableEarlyTermination: True
 
   # animation files to learn from
   # these motions should use hyperparameters from HumanoidAMPPPO.yaml
-  motion_file: "cmu_walk_retarget_to_atlas.npy"
+  motion_file: "kickoff_atlas_rilab.npy"
 
   # these motions should use hyperparameters from HumanoidAMPPPOLowGP.yaml
   #motion_file: "amp_humanoid_hop.npy"
   #motion_file: "amp_humanoid_backflip.npy"
 
   asset:
-    assetFileName: "mjcf/atlas.xml"
+    assetFileName: "mjcf/atlas_rilab.xml"
 
   plane:
     staticFriction: 1.0

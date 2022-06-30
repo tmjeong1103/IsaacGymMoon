@@ -50,21 +50,21 @@ Data required for retargeting are stored in a retarget config dictionary as a js
 VISUALIZE = False
 
 def project_joints(motion):
-    right_upper_arm_id = motion.skeleton_tree._node_indices["r_uarm"]
-    right_lower_arm_id = motion.skeleton_tree._node_indices["r_larm"]
-    right_hand_id = motion.skeleton_tree._node_indices["r_hand"]
+    right_upper_arm_id = motion.skeleton_tree._node_indices["r_clav"]
+    right_lower_arm_id = motion.skeleton_tree._node_indices["r_uarm"]
+    right_hand_id = motion.skeleton_tree._node_indices["r_farm"]
 
-    left_upper_arm_id = motion.skeleton_tree._node_indices["l_uarm"]
-    left_lower_arm_id = motion.skeleton_tree._node_indices["l_larm"]
-    left_hand_id = motion.skeleton_tree._node_indices["l_hand"]
+    left_upper_arm_id = motion.skeleton_tree._node_indices["l_clav"]
+    left_lower_arm_id = motion.skeleton_tree._node_indices["l_uarm"]
+    left_hand_id = motion.skeleton_tree._node_indices["l_farm"]
     
-    right_thigh_id = motion.skeleton_tree._node_indices["r_uleg"]
+    right_thigh_id = motion.skeleton_tree._node_indices["r_uleg"] #r_uglut
     right_shin_id = motion.skeleton_tree._node_indices["r_lleg"]
-    right_foot_id = motion.skeleton_tree._node_indices["r_foot"]
+    right_foot_id = motion.skeleton_tree._node_indices["r_talus"] #r_talus
 
-    left_thigh_id = motion.skeleton_tree._node_indices["l_uleg"]
+    left_thigh_id = motion.skeleton_tree._node_indices["l_uleg"] #l_uglut
     left_shin_id = motion.skeleton_tree._node_indices["l_lleg"]
-    left_foot_id = motion.skeleton_tree._node_indices["l_foot"]
+    left_foot_id = motion.skeleton_tree._node_indices["l_talus"]
     
     device = motion.global_translation.device
 
@@ -207,7 +207,7 @@ def project_joints(motion):
 
 def main():
     # load retarget config
-    retarget_data_path = "data/configs/retarget_cmu_to_atlas.json"
+    retarget_data_path = "data/configs/retarget_humanoid_to_atlas.json"
     with open(retarget_data_path) as f:
         retarget_data = json.load(f)
 

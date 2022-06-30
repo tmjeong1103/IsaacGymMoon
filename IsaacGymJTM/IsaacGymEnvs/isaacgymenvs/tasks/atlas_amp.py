@@ -24,7 +24,7 @@ from isaacgymenvs.utils.torch_jit_utils import *
 
 
 # modified for Atlas
-NUM_AMP_OBS_PER_STEP = 105 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
+NUM_AMP_OBS_PER_STEP = 81 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 
 
 class AtlasAMP(AtlasAMPBase):
@@ -49,7 +49,7 @@ class AtlasAMP(AtlasAMPBase):
 
         super().__init__(config=self.cfg, sim_device=sim_device, graphics_device_id=graphics_device_id, headless=headless)
 
-        motion_file = cfg['env'].get('motion_file', "cmu_walk_retaget_to_atlas.npy")
+        motion_file = cfg['env'].get('motion_file')
         motion_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../assets/amp/motions/" + motion_file)
         self._load_motion(motion_file_path)
 
