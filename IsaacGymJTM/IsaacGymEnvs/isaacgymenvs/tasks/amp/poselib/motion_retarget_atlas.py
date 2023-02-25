@@ -25,7 +25,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import sys
+sys.path.append('/home/yoonbyeong/Dev/AMP/IsaacGymMoon/IsaacGymJTM/isaacgym/python')
+import os
+# sys.path.append('/home/yoonbyeong/Dev/AMP/IsaacGymMoon/IsaacGymJTM/IsaacGymEnvs/isaacgymenvs/tasks/amp/poselib/data')
 from isaacgym.torch_utils import *
 import torch
 import json
@@ -208,20 +211,20 @@ def project_joints(motion):
 def main():
     # load retarget config
     retarget_data_path = "data/configs/retarget_cmu_to_atlas.json"
-    with open(retarget_data_path) as f:
+    with open(os.path.join(os.path.dirname(__file__), retarget_data_path)) as f:
         retarget_data = json.load(f)
 
     # load and visualize t-pose files
-    source_tpose = SkeletonState.from_file(retarget_data["source_tpose"])
+    source_tpose = SkeletonState.from_file(os.path.join(os.path.dirname(__file__), retarget_data["source_tpose"]))
     if VISUALIZE:
         plot_skeleton_state(source_tpose)
 
-    target_tpose = SkeletonState.from_file(retarget_data["target_tpose"])
+    target_tpose = SkeletonState.from_file(os.path.join(os.path.dirname(__file__), retarget_data["target_tpose"]))
     if VISUALIZE:
         plot_skeleton_state(target_tpose)
 
     # load and visualize source motion sequence
-    source_motion = SkeletonMotion.from_file(retarget_data["source_motion"])
+    source_motion = SkeletonMotion.from_file(os.path.join(os.path.dirname(__file__), retarget_data["source_motion"]))
     if VISUALIZE:
         plot_skeleton_motion_interactive(source_motion)
 

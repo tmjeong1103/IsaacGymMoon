@@ -1,0 +1,28 @@
+{
+    "source_motion": "data/kickoff_walk_amp.npy",
+    "target_motion_path": "data/kickoff_atlas_rilab.npy",
+    "source_tpose": "data/amp_humanoid_tpose.npy",
+    "target_tpose": "data/atlas_rilab_tpose.npy",
+    "joint_mapping": {
+        "pelvis": "pelvis",
+        "left_thigh": "l_uleg",
+        "left_shin": "l_lleg",
+        "left_foot": "l_talus",
+        "right_thigh": "r_uleg",
+        "right_shin": "r_lleg",
+        "right_foot": "r_talus",
+        "torso": "ltorso",
+        "head": "head", 
+        "left_upper_arm": "l_clav",
+        "left_lower_arm": "l_uarm",
+        "left_hand": "l_farm",
+        "right_upper_arm": "r_clav",
+        "right_lower_arm": "r_uarm",
+        "right_hand": "r_farm"
+    },
+    "rotation": [0, 0, 0, 1],
+    "scale": 0.93,
+	"root_height_offset": -0.02,
+	"trim_frame_beg": 75,
+	"trim_frame_end": 372
+}
