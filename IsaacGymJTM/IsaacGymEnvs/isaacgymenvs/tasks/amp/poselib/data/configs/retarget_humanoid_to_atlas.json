@@ -1,8 +1,8 @@
 {
-    "source_motion": "data/kickoff_walk_amp.npy",
-    "target_motion_path": "data/kickoff_atlas_rilab.npy",
-    "source_tpose": "data/amp_humanoid_tpose.npy",
-    "target_tpose": "data/atlas_rilab_tpose.npy",
+    "source_motion": "data/cmu_run_motion.npy",
+    "target_motion_path": "data/run_atlas_v5.npy",
+    "source_tpose": "data/cmu_tpose.npy",
+    "target_tpose": "data/atlas_tpose.npy",
     "joint_mapping": {
         "pelvis": "pelvis",
         "left_thigh": "l_uleg",
@@ -14,10 +14,10 @@
         "torso": "ltorso",
         "head": "head", 
         "left_upper_arm": "l_clav",
-        "left_lower_arm": "l_uarm",
+        "left_lower_arm": "l_luarm",
         "left_hand": "l_farm",
         "right_upper_arm": "r_clav",
-        "right_lower_arm": "r_uarm",
+        "right_lower_arm": "r_luarm",
         "right_hand": "r_farm"
     },
     "rotation": [0, 0, 0, 1],

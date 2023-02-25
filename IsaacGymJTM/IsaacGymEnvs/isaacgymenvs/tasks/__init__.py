@@ -28,35 +28,14 @@
 
 from tasks.atlas_amp import AtlasAMP
 from tasks.atlas import Atlas
-from tasks.allegro_hand import AllegroHand
-from tasks.ant import Ant
-from tasks.anymal import Anymal
-from tasks.anymal_terrain import AnymalTerrain
-from tasks.ball_balance import BallBalance
-from tasks.cartpole import Cartpole 
-from tasks.franka_cabinet import FrankaCabinet
 from tasks.humanoid import Humanoid
 from tasks.humanoid_amp import HumanoidAMP
-from tasks.ingenuity import Ingenuity
-from tasks.quadcopter import Quadcopter
-from tasks.shadow_hand import ShadowHand
-from tasks.trifinger import Trifinger
 
 # Mappings from strings to environments
 isaacgym_task_map = {
     "AtlasAMP": AtlasAMP,
     "Atlas": Atlas,
-    "AllegroHand": AllegroHand,
-    "Ant": Ant,
-    "Anymal": Anymal,
-    "AnymalTerrain": AnymalTerrain,
-    "BallBalance": BallBalance,
-    "Cartpole": Cartpole,
-    "FrankaCabinet": FrankaCabinet,
     "Humanoid": Humanoid,
-    "HumanoidAMP": HumanoidAMP,
-    "Ingenuity": Ingenuity,
-    "Quadcopter": Quadcopter,
-    "ShadowHand": ShadowHand,
-    "Trifinger": Trifinger,
+    "HumanoidAMP": HumanoidAMP
+
 }

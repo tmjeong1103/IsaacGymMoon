@@ -1,6 +1,6 @@
 {
-    "source_motion": "data/cmu_run_motion_amp.npy",
-    "target_motion_path": "data/post_process2.npy",
+    "source_motion": "data/atlas_walk_post_process2.npy",
+    "target_motion_path": "data/cmu_walk_retarget_to_atlas.npy",
     "source_tpose": "data/cmu_zero_pose.npy",
     "target_tpose": "data/atlas_tpose.npy",
     "joint_mapping": {
@@ -22,7 +22,7 @@
     },
     "rotation": [0, 0, 0.7071068, 0.7071068],
     "scale": 0.05,
-	"root_height_offset": -0.8,
+	"root_height_offset": 0.1,
 	"trim_frame_beg": 75,
 	"trim_frame_end": 372
 }

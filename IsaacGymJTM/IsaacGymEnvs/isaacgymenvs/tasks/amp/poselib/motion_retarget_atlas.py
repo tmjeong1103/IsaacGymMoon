@@ -37,6 +37,8 @@ import numpy as np
 from poselib.core.rotation3d import *
 from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState, SkeletonMotion
 from poselib.visualization.common import plot_skeleton_state, plot_skeleton_motion_interactive
+import os
+
 
 """
 This scripts shows how to retarget a motion clip from the source skeleton to a target skeleton.
@@ -53,21 +55,21 @@ Data required for retargeting are stored in a retarget config dictionary as a js
 VISUALIZE = False
 
 def project_joints(motion):
-    right_upper_arm_id = motion.skeleton_tree._node_indices["r_uarm"]
-    right_lower_arm_id = motion.skeleton_tree._node_indices["r_larm"]
-    right_hand_id = motion.skeleton_tree._node_indices["r_hand"]
+    right_upper_arm_id = motion.skeleton_tree._node_indices["r_clav"]
+    right_lower_arm_id = motion.skeleton_tree._node_indices["r_ufarm"]
+    right_hand_id = motion.skeleton_tree._node_indices["r_lfarm"]
 
-    left_upper_arm_id = motion.skeleton_tree._node_indices["l_uarm"]
-    left_lower_arm_id = motion.skeleton_tree._node_indices["l_larm"]
-    left_hand_id = motion.skeleton_tree._node_indices["l_hand"]
+    left_upper_arm_id = motion.skeleton_tree._node_indices["l_clav"]
+    left_lower_arm_id = motion.skeleton_tree._node_indices["l_ufarm"]
+    left_hand_id = motion.skeleton_tree._node_indices["l_lfarm"]
     
-    right_thigh_id = motion.skeleton_tree._node_indices["r_uleg"]
+    right_thigh_id = motion.skeleton_tree._node_indices["r_uleg"] #r_uglut
     right_shin_id = motion.skeleton_tree._node_indices["r_lleg"]
-    right_foot_id = motion.skeleton_tree._node_indices["r_foot"]
+    right_foot_id = motion.skeleton_tree._node_indices["r_talus"] #r_talus
 
-    left_thigh_id = motion.skeleton_tree._node_indices["l_uleg"]
+    left_thigh_id = motion.skeleton_tree._node_indices["l_uleg"] #l_uglut
     left_shin_id = motion.skeleton_tree._node_indices["l_lleg"]
-    left_foot_id = motion.skeleton_tree._node_indices["l_foot"]
+    left_foot_id = motion.skeleton_tree._node_indices["l_talus"]
     
     device = motion.global_translation.device
 
@@ -210,8 +212,11 @@ def project_joints(motion):
 
 def main():
     # load retarget config
-    retarget_data_path = "data/configs/retarget_cmu_to_atlas.json"
-    with open(os.path.join(os.path.dirname(__file__), retarget_data_path)) as f:
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    print(current_dir)
+
+    retarget_data_path = current_dir+"/data/configs/retarget_cmu_to_atlas_v5.json"
+    with open(retarget_data_path) as f:
         retarget_data = json.load(f)
 
     # load and visualize t-pose files
@@ -259,7 +264,7 @@ def main():
     target_motion = SkeletonMotion.from_skeleton_state(new_sk_state, fps=target_motion.fps)
 
     # need to convert some joints from 3D to 1D (e.g. elbows and knees)
-    target_motion = project_joints(target_motion)
+    # target_motion = project_joints(target_motion)
 
     # move the root so that the feet are on the ground
     local_rotation = target_motion.local_rotation

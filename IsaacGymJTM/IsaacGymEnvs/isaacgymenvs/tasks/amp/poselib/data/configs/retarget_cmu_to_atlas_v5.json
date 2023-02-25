@@ -1,0 +1,28 @@
+{
+    "source_motion": "data/cmu_run_motion.npy",
+    "target_motion_path": "data/cmu_walk_retarget_to_atlas.npy",
+    "source_tpose": "data/cmu_zero_pose.npy",
+    "target_tpose": "data/atlas_tpose.npy",
+    "joint_mapping": {
+        "Hips": "pelvis",
+        "LeftUpLeg": "l_uleg",
+        "LeftLeg": "l_lleg",
+        "LeftFoot": "l_talus",
+        "RightUpLeg": "r_uleg",
+        "RightLeg": "r_lleg",
+        "RightFoot": "r_talus",
+        "Spine1": "ltorso",
+        
+        "LeftArm": "l_clav",
+        "LeftForeArm": "l_ufarm",
+        "LeftHand": "l_lfarm",
+        "RightArm": "r_clav",
+        "RightForeArm": "r_ufarm",
+        "RightHand": "r_lfarm"
+    },
+    "rotation": [0, 0, 0.7071068, 0.7071068],
+    "scale": 0.05,
+	"root_height_offset": 0.1,
+	"trim_frame_beg": 0,
+	"trim_frame_end": 165
+}

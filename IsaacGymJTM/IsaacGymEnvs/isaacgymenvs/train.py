@@ -28,7 +28,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+# import sys
+# sys.path.append('/home/user/Workspace/IsaacGymMoon_old/IsaacGymJTM')
+# print(sys.path)
 import isaacgym
 
 import os
@@ -80,13 +82,14 @@ def launch_rlg_hydra(cfg: DictConfig):
 
     # `create_rlgpu_env` is environment construction function which is passed to RL Games and called internally.
     # We use the helper function here to specify the environment config.
+    print(omegaconf_to_dict(cfg.task))
     create_rlgpu_env = get_rlgames_env_creator(
-        omegaconf_to_dict(cfg.task),
-        cfg.task_name,
-        cfg.sim_device,
-        cfg.rl_device,
-        cfg.graphics_device_id,
-        cfg.headless,
+        task_config=omegaconf_to_dict(cfg.task),
+        task_name=cfg.task_name,
+        sim_device=cfg.sim_device,
+        rl_device=cfg.rl_device,
+        graphics_device_id=cfg.graphics_device_id,
+        headless=cfg.headless,
         multi_gpu=cfg.multi_gpu,
     )
 

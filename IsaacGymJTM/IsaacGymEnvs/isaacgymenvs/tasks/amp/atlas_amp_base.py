@@ -43,15 +43,15 @@ DOF_BODY_IDS    = [1, 2, 3,
                     10,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23, 
-                    24, 25, 26, 27, 28, 29
+                    24, 25, 26, 27, 28, 29, 30
                     ]    # body idx which have DOF, not include root
 DOF_OFFSETS     = [0, 1, 2, 3, 
                     4, 5, 6, 7, 8, 9, 10,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23,
-                    24, 25, 26, 27, 28]  # joint number offset of each body
-NUM_OBS = 105 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
-NUM_ACTIONS = 28    #from mjcf file (atlas_v5.xml actuator)
+                    24, 25, 26, 27, 28, 29, 30]  # joint number offset of each body
+NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_ACTIONS = 30    #from mjcf file (atlas_v5.xml actuator)
 
 
 KEY_BODY_NAMES = ["r_hand", "l_hand", "r_foot", "l_foot"]
@@ -130,8 +130,7 @@ class AtlasAMPBase(VecTask):
         self._terminate_buf = torch.ones(self.num_envs, device=self.device, dtype=torch.long)
         
         if self.viewer != None:
-            self._init_camera()
-            
+            self._init_camera()   
         return
 
     def get_obs_size(self):
@@ -184,7 +183,7 @@ class AtlasAMPBase(VecTask):
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../assets')
-        asset_file = "mjcf/atlas.xml"    # modified for Atlas
+        asset_file = "mjcf/atlas_v5.xml"    # modified for Atlas
 
         if "asset" in self.cfg["env"]:
             #asset_root = self.cfg["env"]["asset"].get("assetRoot", asset_root)
@@ -232,7 +231,7 @@ class AtlasAMPBase(VecTask):
                 self.sim, lower, upper, num_per_row
             )
             contact_filter = 0
-            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
+            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "humanoid", i, contact_filter, 0) # modified for Atlas
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
@@ -469,12 +468,15 @@ class AtlasAMPBase(VecTask):
 #####################################################################
 
 @torch.jit.script
+# modified
 def dof_to_obs(pose):
     # type: (Tensor) -> Tensor
-    #dof_obs_size = 64
-    #dof_offsets = [0, 3, 6, 9, 12, 13, 16, 19, 20, 23, 24, 27, 30, 31, 34]
-    dof_obs_size = 52
-    dof_offsets = [0, 3, 6, 9, 10, 13, 14, 17, 18, 21, 24, 25, 28]
+    dof_obs_size = 30
+    dof_offsets = [0, 1, 2, 3, 
+                    4, 5, 6, 7, 8, 9, 10,
+                    11, 12, 13, 14, 15, 16, 17,
+                    18, 19, 20, 21, 22, 23,
+                    24, 25, 26, 27, 28, 29, 30]  # joint number offset of each body
     num_joints = len(dof_offsets) - 1
 
     dof_obs_shape = pose.shape[:-1] + (dof_obs_size,)
@@ -555,6 +557,7 @@ def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_id
         fall_contact = torch.any(fall_contact, dim=-1)
 
         body_height = rigid_body_pos[..., 2]
+        # print(body_height)
         fall_height = body_height < termination_height
         fall_height[:, contact_body_ids] = False
         fall_height = torch.any(fall_height, dim=-1)

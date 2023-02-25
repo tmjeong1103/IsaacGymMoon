@@ -39,11 +39,17 @@ It then generates a zero rotation pose, and adjusts the pose into a T-Pose.
 """
 
 # import MJCF file
-xml_path = "../../../../assets/mjcf/atlas.xml"
+xml_path = "../../../../assets/mjcf/atlas_v5.xml"
 skeleton = SkeletonTree.from_mjcf(xml_path)
 
 # generate zero rotation pose
 zero_pose = SkeletonState.zero_pose(skeleton)
+
+# local_rotation = zero_pose.local_rotation
+# local_rotation[skeleton.index("l_clav")] = quat_mul(
+#     quat_from_angle_axis(angle=torch.tensor([180.0]), axis=torch.tensor([0.0, 0.0, 1.0]), degree=True), 
+#     local_rotation[skeleton.index("l_clav")]
+# )
 
 # adjust pose into a T Pose
 translation = zero_pose.root_translation

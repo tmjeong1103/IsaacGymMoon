@@ -24,8 +24,7 @@ from isaacgymenvs.utils.torch_jit_utils import *
 
 
 # modified for Atlas
-NUM_AMP_OBS_PER_STEP = 105 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
-
+NUM_AMP_OBS_PER_STEP = 85 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 
 class AtlasAMP(AtlasAMPBase):
 
@@ -49,7 +48,7 @@ class AtlasAMP(AtlasAMPBase):
 
         super().__init__(config=self.cfg, sim_device=sim_device, graphics_device_id=graphics_device_id, headless=headless)
 
-        motion_file = cfg['env'].get('motion_file', "cmu_walk_retaget_to_atlas.npy")
+        motion_file = cfg['env'].get('motion_file')
         motion_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../assets/amp/motions/" + motion_file)
         self._load_motion(motion_file_path)
 
@@ -310,6 +309,7 @@ def build_amp_observations(root_states, dof_pos, dof_vel, key_body_pos, local_ro
     flat_local_key_pos = local_end_pos.view(local_key_body_pos.shape[0], local_key_body_pos.shape[1] * local_key_body_pos.shape[2])
     
     dof_obs = dof_to_obs(dof_pos)
+    # print(root_h.shape, root_rot_obs.shape, local_root_vel.shape, local_root_ang_vel.shape, dof_obs.shape, dof_vel.shape, flat_local_key_pos.shape)
 
     obs = torch.cat((root_h, root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos), dim=-1)
     return obs

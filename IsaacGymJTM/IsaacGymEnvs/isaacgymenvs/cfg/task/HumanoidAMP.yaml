@@ -25,9 +25,9 @@ env:
 
   # animation files to learn from
   # these motions should use hyperparameters from HumanoidAMPPPO.yaml
-  motion_file: "cmu_run_motion_amp.npy"
-  #motion_file: "amp_humanoid_run.npy"
-  #motion_file: "amp_humanoid_dance.npy"
+  # motion_file: "cmu_run_motion_amp.npy"
+  motion_file: "amp_humanoid_run.npy"
+  # motion_file: "amp_humanoid_dance.npy"
 
   # these motions should use hyperparameters from HumanoidAMPPPOLowGP.yaml
   #motion_file: "amp_humanoid_hop.npy"
