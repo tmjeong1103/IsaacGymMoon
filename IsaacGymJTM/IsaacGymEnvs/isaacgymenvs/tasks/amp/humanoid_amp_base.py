@@ -40,7 +40,7 @@ from ..base.vec_task import VecTask
 
 DOF_BODY_IDS = [1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14] # num = 12
 DOF_OFFSETS = [0, 3, 6, 9, 10, 13, 14, 17, 18, 21, 24, 25, 28]
-NUM_OBS = 13 + 52 + 28 + 12 # [root_h, root_rot, root_vel(3), root_ang_vel, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 13 + 52 + 28 + 12 # [root_h(1), root_rot(6), root_vel(3), root_ang_vel(3), dof_pos(52), dof_vel(28), key_body_pos(12)]
 NUM_ACTIONS = 28
 
 

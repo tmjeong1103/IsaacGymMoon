@@ -50,7 +50,7 @@ DOF_OFFSETS     = [0, 1, 2, 3,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23,
                     24, 25, 26, 27, 28, 29, 30]  # joint number offset of each body
-NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 30    #from mjcf file (atlas_v5.xml actuator)
 
 
@@ -231,7 +231,7 @@ class AtlasAMPBase(VecTask):
                 self.sim, lower, upper, num_per_row
             )
             contact_filter = 0
-            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "humanoid", i, contact_filter, 0) # modified for Atlas
+            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
