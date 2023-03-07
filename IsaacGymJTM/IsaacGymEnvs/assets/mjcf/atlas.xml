@@ -17,7 +17,7 @@
 ====================================================== -->
 
 <mujoco model="Atlas (v1.31)">
-	<compiler coordinate="local" angle="radian" meshdir="Meshes/"/>
+	<compiler coordinate="local" angle="radian" meshdir="meshes_v5/"/>
 	<size njmax ="1000" nuserdata="600000"/>
 	<default>
 		<site type="sphere" size="0.005"/>
@@ -37,8 +37,8 @@
 		<mesh name="l_larm"         file="l_larm.stl"/>
 		<mesh name="l_farm"         file="l_farm.stl"/>
 		<mesh name="l_hand"			file="l_hand.stl"/>
-		<mesh name="head"           file="head.stl"/>
-		<mesh name="head_camera"    file="head_camera.stl"/>
+		<!-- <mesh name="head"           file="head.stl"/>
+		<mesh name="head_camera"    file="head_camera.stl"/> -->
 		<mesh name="r_clav"         file="r_clav.stl"/>
 		<mesh name="r_scap"         file="r_scap.stl"/>
 		<mesh name="r_uarm"         file="r_uarm.stl"/>
@@ -105,6 +105,13 @@
 						<geom type="box" pos="0.0446 0 0.1869" size="0.1594 0.12 0.1581" />
 						<geom type="capsule" pos="0.024 0.16 0.18" quat="0.965926 -0.258820 0 0" size="0.0363 0.111875"/>
 						<geom type="capsule" pos="0.024 -0.16 0.18" quat="0.965926 0.258820 0 0" size="0.0363 0.111875"/>
+						<!-- l5vd5 -->
+						<body name="head" pos="0.2546 0 0.6215">
+                            <inertial pos="0 0 0" mass="0.1" diaginertia="1e-005 1e-005 1e-005" />
+                            <geom type="box" contype="0" conaffinity="0" group="1" size="0.005 0.005 0.005" pos="0 0 0" />
+                            <joint name="neck_ry" axis="0 1 0" range="-0.602139 1.14319" stiffness="50" damping="5" armature=".017"/>
+                        </body>
+						<!-- l5vd5 -->
 						<body name="l_clav" pos="0.024 0.221 0.289" >
 							<inertial pos="0.014 0.058 0.029" quat="0.137950 0.693520 -0.137950 0.693520" mass="2.369" diaginertia="0.007 0.006414 0.003586" />
 							<joint name="l_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="0"/>
@@ -135,38 +142,47 @@
 											<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" pos="0.000654 -0.018685 -0.001301" quat="0.707069 0.707067 0.007393 0.007393" mesh="l_farm" />
 											<!--geom type="cylinder" pos="0 0.065 0.004" quat="0.707105 0 0.707108 0" size="0.045 0.0625" /-->
 											<!--geom type="box" pos="0.001 0.015 -0.002" size="0.0675 0.05 0.0225" /-->
-											<body name="l_hand" pos="0 0.058 0" >
-												<inertial pos="0 0.093 0" quat="0.707107 0.707107 0 0" mass="2.263" diaginertia="0.01 0.01 0.002" />
-												<joint name="l_arm_mwx" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.436 1.571" user="9001" stiffness="0"/>
-												<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" mesh="l_hand" />
-												<geom type="cylinder" pos="0.001 0.1 0.01" quat="0.707107 0.707107 0 0" size="0.03 0.025" />
-												<geom type="box" pos="0.001 0.05 0.01" size="0.065 0.045 0.035"/>
-												
-												<!-- ========== INCLUDE A HAND HERE ========== -->
-												<!--<include file="../sandiaHand/include_sandia_left_hand_chain.xml"/>-->
+											<body name="l_lfarm" pos="0 0 0">
+                                                <inertial pos="0.00017 -0.02515 0.00163" quat="0.5 0.5 -0.5 0.5" mass="0.648" diaginertia="0.000825 0.000764 0.000429" />
+                                                <!-- joint 10 -->
+                                                <joint name="l_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="50" damping="15" armature=".015"/>
+                                                <geom type="cylinder" size="0.031 0.01" pos="0 -0.104 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.045 0.0075" pos="0 -0.087 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.052 0.0075" pos="0 -0.075 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.043 0.0135" pos="0 -0.052 0" quat="0.707107 0.707107 0 0" />
+												<body name="l_hand" pos="0 0.058 0" >
+													<inertial pos="0 0.093 0" quat="0.707107 0.707107 0 0" mass="2.263" diaginertia="0.01 0.01 0.002" />
+													<joint name="l_arm_mwx" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.436 1.571" user="9001" stiffness="0"/>
+													<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" mesh="l_hand" />
+													<geom type="cylinder" pos="0.001 0.1 0.01" quat="0.707107 0.707107 0 0" size="0.03 0.025" />
+													<geom type="box" pos="0.001 0.05 0.01" size="0.065 0.045 0.035"/>
+													
+													<!-- ========== INCLUDE A HAND HERE ========== -->
+													<!--<include file="../sandiaHand/include_sandia_left_hand_chain.xml"/>-->
+												</body>
 											</body>
 										</body>
 									</body>
 								</body>
 							</body>
 						</body>
-						<body name="head" pos="0.21672 0 0.53796"  user="-6001">
+						<!-- <body name="head" pos="0.21672 0 0.53796"  user="-6001">
 							<inertial pos="-0.075493 0.000033 0.02774" quat="0.981276 -0.000974 0.192607 -0.000133" mass="1.41984" diaginertia="0.002489 0.002489 0.002489" />
-							<joint name="neck_ay" type="hinge" pos="0 0 0" axis="0 1 0" range="-0.610865 1.134464" damping="2" stiffness="5"/>
+							<2joint name="neck_ay" type="hinge" pos="0 0 0" axis="0 1 0" range="-0.610865 1.134464" damping="2" stiffness="5"/>
 							<geom group="1" contype="0" rgba="0.9098 0.44314 0.031373 1" mesh="head" />
 							<geom type="box" pos="-0.0503 0 -0.00195" size="0.06555 0.06 0.02955" rgba="0.9098 0.44314 0.031373 1" />
 							<geom type="box" pos="-0.093 0 0.0868" size="0.0234 0.06 0.0592" rgba="0.9098 0.44314 0.031373 1" />
-							<!-->body name="hokuyo_link" pos="-0.0446 0 0.088" >
+							>body name="hokuyo_link" pos="-0.0446 0 0.088" >
 								<inertial pos="0.012428 0.000408 -0.004183" quat="0.498020 0.501987 0.501988 0.497989" mass="0.057654" diaginertia="0.002080 0.001783 0.000401" />
-								<joint name="hokuyo_joint" type="hinge" limtype="0" pos="0 0 0" axis="1 0 0" />
+								<2joint name="hokuyo_joint" type="hinge" limtype="0" pos="0 0 0" axis="1 0 0" />
 								<geom group="1" contype="0" pos="0.025818 0.000574 0.003510" quat="0.601393 -0.007554 -0.075370 0.795355" rgba="0.72941 0.35686 0.023529 1" mesh="head_camera" />
 								<geom type="box" pos="0.01885 0 -0.02119" size="0.04 0.03 0.02119" rgba="0.72941 0.35686 0.023529 1" />
 								<geom type="cylinder" pos="0.03 0 0.0235" size="0.024425 0.0235" rgba="0.72941 0.35686 0.023529 1" />
 								<body name="head_hokuyo_frame" pos="0.03 0 0.015" >
 									<inertial pos="0.042428 0.000408 0.010817" mass="0.001" diaginertia="0.000001 0.000001 0.000001" />
 								</body>
-							</body-->
-						</body>
+							</body
+						</body> -->
 						<body name="r_clav" pos="0.024 -0.221 0.289" >
 							<inertial pos="0.014 -0.058 0.029" quat="-0.137950 0.693520 0.137950 0.693520" mass="2.369" diaginertia="0.007 0.006414 0.003586" />
 							<joint name="r_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 -0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="0"/>
@@ -197,15 +213,24 @@
 											<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" pos="0.000654 0.018685 -0.001301" quat="0.707067 0.707069 -0.007393 -0.007393" mesh="r_farm" />
 											<!--geom type="cylinder" pos="0 -0.065 0.004" quat="0.707105 0 0.707108 0" size="0.045 0.0625" />
 											<geom type="box" pos="0.001 -0.015 -0.002" size="0.0675 0.05 0.0225" /-->
-											<body name="r_hand" pos="0 -0.058 0" >
-												<inertial pos="0 -0.093 0" quat="0.707107 0.707107 0 0" mass="2.263" diaginertia="0.01 0.01 0.002" />
-												<joint name="r_arm_mwx" type="hinge" pos="0 0 0" axis="1 0 0" range="-1.571 0.436" user="9001" stiffness="0"/>
-												<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" mesh="r_hand" />
-												<geom type="cylinder" pos="0.001 -0.1 0.01" quat="0.707107 0.707107 0 0" size="0.03 0.025" />
-												<geom type="box" pos="0.001 -0.05 0.01" size="0.065 0.045 0.035" />
-												
-												<!-- ========== INCLUDE A HAND HERE ========== -->
-												<!--<include file="../sandiaHand/include_sandia_right_hand_chain.xml"/>-->
+											<body name="r_lfarm" pos="0 0 0">
+                                                <inertial pos="0.00017 -0.02515 0.00163" quat="0.5 0.5 -0.5 0.5" mass="0.648" diaginertia="0.000825 0.000764 0.000429" />
+                                                <!-- joint 17 -->
+                                                <joint name="r_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="50" damping="15" armature=".015"/>
+                                                <geom type="cylinder" size="0.031 0.01" pos="0 -0.104 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.045 0.0075" pos="0 -0.087 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.052 0.0075" pos="0 -0.075 0" quat="0.707107 0.707107 0 0" />
+                                                <geom type="cylinder" size="0.043 0.0135" pos="0 -0.052 0" quat="0.707107 0.707107 0 0" />
+												<body name="r_hand" pos="0 -0.058 0" >
+													<inertial pos="0 -0.093 0" quat="0.707107 0.707107 0 0" mass="2.263" diaginertia="0.01 0.01 0.002" />
+													<joint name="r_arm_mwx" type="hinge" pos="0 0 0" axis="1 0 0" range="-1.571 0.436" user="9001" stiffness="0"/>
+													<geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" mesh="r_hand" />
+													<geom type="cylinder" pos="0.001 -0.1 0.01" quat="0.707107 0.707107 0 0" size="0.03 0.025" />
+													<geom type="box" pos="0.001 -0.05 0.01" size="0.065 0.045 0.035" />
+													
+													<!-- ========== INCLUDE A HAND HERE ========== -->
+													<!--<include file="../sandiaHand/include_sandia_right_hand_chain.xml"/>-->
+												</body>
 											</body>
 										</body>
 									</body>
@@ -320,7 +345,7 @@
 		<motor name="l_arm_elx_actuator" joint="l_arm_elx" gear="114"/>
 		<motor name="l_arm_uwy_actuator" joint="l_arm_uwy" gear="114"/>
 		<motor name="l_arm_mwx_actuator" joint="l_arm_mwx" gear="60"/>
-		<motor name="neck_ay_actuator" 	 joint="neck_ay" 	gear="5"/>
+		<!-- <motor name="neck_ay_actuator" 	 joint="neck_ay" 	gear="5"/> -->
 		<motor name="r_arm_usy_actuator" joint="r_arm_usy" gear="212"/>
 		<motor name="r_arm_shx_actuator" joint="r_arm_shx" gear="170"/>
 		<motor name="r_arm_ely_actuator" joint="r_arm_ely" gear="114"/>

@@ -20,13 +20,13 @@ env:
 
   localRootObs: False
   contactBodies: ["r_foot", "l_foot", "l_talus", "r_talus"]
-  terminationHeight: 0.1
+  terminationHeight: 0.30
   enableEarlyTermination: True
 
   # animation files to learn from
   # these motions should use hyperparameters from HumanoidAMPPPO.yaml
   # motion_file: "atlas_walk_post_process.npy"
-  motion_file: "atlas_punch_trunc.npy"
+  motion_file: "plz2.npy"
   # motion_file: "cmu_walk_retarget_to_atlas.npy"
 
   
@@ -36,7 +36,7 @@ env:
   #motion_file: "amp_humanoid_backflip.npy"
 
   asset:
-    assetFileName: "mjcf/atlas_v5.xml"
+    assetFileName: "mjcf/atlas.xml"
 
   plane:
     staticFriction: 1.0

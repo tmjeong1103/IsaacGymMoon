@@ -39,7 +39,13 @@ from isaacgymenvs.utils.torch_jit_utils import *
 # from tasks.amp.humanoid_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 from tasks.amp.atlas_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 
-
+# TODO l5vd5 0: x, 1: y, 2: z (-1??)
+JOINT_AXIS = [2, 1, 0, 1, 2, 0, 1, 0, 1, 0,
+              1, 2, 0, 1, 0, 1, 0, 1, 2, 0,
+              1, 1, 1, 0, 2, 0, 1, 1, 1, 0]
+JOINT_SIGN = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+              1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+              1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 class MotionLib():
     def __init__(self, motion_file, num_dofs, key_body_ids, device):
         self._num_dof = num_dofs
@@ -283,7 +289,8 @@ class MotionLib():
             elif (joint_size == 1):
                 joint_q = local_rot[:, body_id]
                 joint_theta, joint_axis = quat_to_angle_axis(joint_q)
-                joint_theta = joint_theta * joint_axis[..., 1] # assume joint is always along y axis
+                joint_theta = joint_theta * joint_axis[..., JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
+                #TODO: l5vd5
 
                 joint_theta = normalize_angle(joint_theta)
                 dof_pos[:, joint_offset] = joint_theta
@@ -317,7 +324,7 @@ class MotionLib():
             elif (joint_size == 1):
                 assert(joint_size == 1)
                 joint_vel = local_vel[body_id]
-                dof_vel[joint_offset] = joint_vel[1] # assume joint is always along y axis
+                dof_vel[joint_offset] = joint_vel[JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
 
             else:
                 print("Unsupported joint type")
