@@ -44,7 +44,7 @@ JOINT_AXIS = [2, 1, 0, 1, 2, 0, 1, 0, 1, 0,
               1, 2, 0, 1, 0, 1, 0, 1, 2, 0,
               1, 1, 1, 0, 2, 0, 1, 1, 1, 0]
 JOINT_SIGN = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-              1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+              1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
               1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 class MotionLib():
     def __init__(self, motion_file, num_dofs, key_body_ids, device):
@@ -126,6 +126,8 @@ class MotionLib():
             local_rot0[ids, :, :]= curr_motion.local_rotation[frame_idx0[ids]].numpy()
             local_rot1[ids, :, :] = curr_motion.local_rotation[frame_idx1[ids]].numpy()
 
+            # qpos
+
             root_vel[ids, :] = curr_motion.global_root_velocity[frame_idx0[ids]].numpy()
             root_ang_vel[ids, :] = curr_motion.global_root_angular_velocity[frame_idx0[ids]].numpy()
             
@@ -156,6 +158,8 @@ class MotionLib():
         key_pos = (1.0 - blend_exp) * key_pos0 + blend_exp * key_pos1
         
         local_rot = slerp(local_rot0, local_rot1, torch.unsqueeze(blend, axis=-1))
+        # qpos
+        # dof_pos = qpos
         dof_pos = self._local_rotation_to_dof(local_rot)
 
         return root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos
