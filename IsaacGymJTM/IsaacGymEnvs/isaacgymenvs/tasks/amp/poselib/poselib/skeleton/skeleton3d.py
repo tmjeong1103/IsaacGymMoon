@@ -1071,13 +1071,14 @@ class SkeletonState(Serializable):
 
 
 class SkeletonMotion(SkeletonState):
-    def __init__(self, tensor_backend, skeleton_tree, is_local, fps, *args, **kwargs):
+    def __init__(self, tensor_backend, skeleton_tree, is_local, fps, q_pos, *args, **kwargs):
         self._fps = fps
+        self._q_pos = q_pos
         super().__init__(tensor_backend, skeleton_tree, is_local, *args, **kwargs)
 
     def clone(self):
         return SkeletonMotion(
-            self.tensor.clone(), self.skeleton_tree, self._is_local, self._fps
+            self.tensor.clone(), self.skeleton_tree, self._is_local, self._fps, self._q_pos,
         )
 
     @property
@@ -1108,6 +1109,11 @@ class SkeletonMotion(SkeletonState):
     def fps(self):
         """ number of frames per second """
         return self._fps
+    
+    @property
+    def q_pos(self):
+        """ q position """
+        return self._q_pos
 
     @property
     def time_delta(self):
@@ -1220,6 +1226,7 @@ class SkeletonMotion(SkeletonState):
             ),
             is_local=dict_repr["is_local"],
             fps=dict_repr["fps"],
+            q_pos=dict_repr["q_pos"]
         )
 
     def to_dict(self) -> OrderedDict:

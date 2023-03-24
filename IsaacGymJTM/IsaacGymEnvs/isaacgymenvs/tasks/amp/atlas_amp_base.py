@@ -50,7 +50,7 @@ DOF_OFFSETS     = [0, 1, 2, 3,
                     11, 12, 13, 14, 15, 16, 17,
                     18, 19, 20, 21, 22, 23,
                     24, 25, 26, 27, 28, 29, 30]  # joint number offset of each body
-NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:4, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 30    #from mjcf file (atlas_v5.xml actuator)
 
 
@@ -190,14 +190,20 @@ class AtlasAMPBase(VecTask):
             asset_file = self.cfg["env"]["asset"].get("assetFileName", asset_file)
 
         asset_options = gymapi.AssetOptions()
-        asset_options.angular_damping = 0.01
+        # asset_options.fix_base_link = True
+        asset_options.angular_damping = 0.05
         asset_options.max_angular_velocity = 100.0
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         humanoid_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
 
         actuator_props = self.gym.get_asset_actuator_properties(humanoid_asset)
         motor_efforts = [prop.motor_effort for prop in actuator_props]
-        
+        # l5vd5
+        # for prop in actuator_props:
+        #     prop.kp = 1000
+        # for prop in actuator_props:
+        #     prop.kv = 10
+        # l5vd5
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "r_foot") # modified for Atlas
         left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "l_foot")   # modified for Atlas
@@ -231,7 +237,7 @@ class AtlasAMPBase(VecTask):
                 self.sim, lower, upper, num_per_row
             )
             contact_filter = 0
-            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "humanoid", i, contact_filter, 0) # modified for Atlas
+            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
@@ -371,6 +377,7 @@ class AtlasAMPBase(VecTask):
         self.actions = actions.to(self.device).clone()
 
         if (self._pd_control):
+            # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
             pd_tar = self._action_to_pd_targets(self.actions)
             pd_tar_tensor = gymtorch.unwrap_tensor(pd_tar)
             self.gym.set_dof_position_target_tensor(self.sim, pd_tar_tensor)

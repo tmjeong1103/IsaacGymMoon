@@ -93,7 +93,7 @@ class AtlasAMP(AtlasAMPBase):
             self._build_amp_obs_demo_buf(num_samples)
         else:
             assert(self._amp_obs_demo_buf.shape[0] == num_samples)
-            
+        # sample motion
         motion_times0 = self._motion_lib.sample_time(motion_ids)
         motion_ids = np.tile(np.expand_dims(motion_ids, axis=-1), [1, self._num_amp_obs_steps])
         motion_times = np.expand_dims(motion_times0, axis=-1)
@@ -176,7 +176,8 @@ class AtlasAMP(AtlasAMPBase):
 
         root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos \
                = self._motion_lib.get_motion_state(motion_ids, motion_times)
-        
+        # TODO l5vd5: to prevent from penetration
+        root_pos[:,2] += 0.10
         self._set_env_state(env_ids=env_ids, 
                             root_pos=root_pos, 
                             root_rot=root_rot, 

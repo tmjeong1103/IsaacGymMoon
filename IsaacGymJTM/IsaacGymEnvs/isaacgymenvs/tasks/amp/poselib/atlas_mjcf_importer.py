@@ -29,12 +29,12 @@
 
 from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState
 from poselib.visualization.common import plot_skeleton_state
-
+import os
 # load in XML mjcf file and save zero rotation pose in npy format
-xml_path = "../../../../assets/mjcf/amp_humanoid.xml"
+xml_path = os.path.join(os.path.dirname(__file__), "../../../../assets/mjcf/atlas_v5_m/atlas_v5.xml")
 skeleton = SkeletonTree.from_mjcf(xml_path)
 zero_pose = SkeletonState.zero_pose(skeleton)
-zero_pose.to_file("data/amp_humanoid.npy")
+zero_pose.to_file("data/atlas_v5_zero_pose.npy")
 
 # visualize zero rotation pose
 plot_skeleton_state(zero_pose)

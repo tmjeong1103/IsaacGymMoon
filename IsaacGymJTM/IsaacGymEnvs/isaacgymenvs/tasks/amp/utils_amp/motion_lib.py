@@ -35,9 +35,17 @@ from ..poselib.poselib.core.rotation3d import *
 from isaacgym.torch_utils import *
 from isaacgymenvs.utils.torch_jit_utils import *
 
-from tasks.amp.humanoid_amp_base import DOF_BODY_IDS, DOF_OFFSETS
+# TODO l5vd5
+# from tasks.amp.humanoid_amp_base import DOF_BODY_IDS, DOF_OFFSETS
+from tasks.amp.atlas_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 
-
+# TODO l5vd5 0: x, 1: y, 2: z (-1??)
+JOINT_AXIS = [2, 1, 0, 1, 2, 0, 1, 0, 1, 0,
+              1, 2, 0, 1, 0, 1, 0, 1, 2, 0,
+              1, 1, 1, 0, 2, 0, 1, 1, 1, 0]
+JOINT_SIGN = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+              1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+              1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 class MotionLib():
     def __init__(self, motion_file, num_dofs, key_body_ids, device):
         self._num_dof = num_dofs
@@ -94,6 +102,9 @@ class MotionLib():
         root_ang_vel = np.empty([n, 3])
         local_rot0 = np.empty([n, num_bodies, 4])
         local_rot1 = np.empty([n, num_bodies, 4])
+        local_qpos0 = np.empty([n, self._num_dof])
+        local_qpos1 = np.empty([n, self._num_dof])
+
         dof_vel = np.empty([n, self._num_dof])
         key_pos0 = np.empty([n, num_key_bodies, 3])
         key_pos1 = np.empty([n, num_key_bodies, 3])
@@ -118,6 +129,10 @@ class MotionLib():
             local_rot0[ids, :, :]= curr_motion.local_rotation[frame_idx0[ids]].numpy()
             local_rot1[ids, :, :] = curr_motion.local_rotation[frame_idx1[ids]].numpy()
 
+            # TODO: l5vd5 qpos
+            local_qpos0[ids, :] = curr_motion.q_pos[frame_idx0[ids]]
+            local_qpos1[ids, :] = curr_motion.q_pos[frame_idx1[ids]]
+
             root_vel[ids, :] = curr_motion.global_root_velocity[frame_idx0[ids]].numpy()
             root_ang_vel[ids, :] = curr_motion.global_root_angular_velocity[frame_idx0[ids]].numpy()
             
@@ -136,6 +151,8 @@ class MotionLib():
         root_ang_vel = to_torch(root_ang_vel, device=self._device)
         local_rot0 = to_torch(local_rot0, device=self._device)
         local_rot1 = to_torch(local_rot1, device=self._device)
+        local_qpos0 = to_torch(local_qpos0, device=self._device)
+        local_qpos1 = to_torch(local_qpos1, device=self._device)
         key_pos0 = to_torch(key_pos0, device=self._device)
         key_pos1 = to_torch(key_pos1, device=self._device)
         dof_vel = to_torch(dof_vel, device=self._device)
@@ -148,7 +165,10 @@ class MotionLib():
         key_pos = (1.0 - blend_exp) * key_pos0 + blend_exp * key_pos1
         
         local_rot = slerp(local_rot0, local_rot1, torch.unsqueeze(blend, axis=-1))
-        dof_pos = self._local_rotation_to_dof(local_rot)
+        # TODO: l5vd5 qpos
+        dof_pos = (1.0 - blend_exp) * local_qpos0 + blend_exp * local_qpos1
+
+        # dof_pos = self._local_rotation_to_dof(local_rot)
 
         return root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos
 
@@ -246,20 +266,31 @@ class MotionLib():
         return num_bodies
 
     def _compute_motion_dof_vels(self, motion):
+        # num_frames = motion.tensor.shape[0]
+        # dt = 1.0 / motion.fps
+        # dof_vels = []
+
+        # for f in range(num_frames - 1):
+        #     local_rot0 = motion.local_rotation[f]
+        #     local_rot1 = motion.local_rotation[f + 1]
+        #     frame_dof_vel = self._local_rotation_to_dof_vel(local_rot0, local_rot1, dt)
+        #     frame_dof_vel = frame_dof_vel
+        #     dof_vels.append(frame_dof_vel)
+        
+        # dof_vels.append(dof_vels[-1])
+        # dof_vels = np.array(dof_vels)
         num_frames = motion.tensor.shape[0]
         dt = 1.0 / motion.fps
         dof_vels = []
 
         for f in range(num_frames - 1):
-            local_rot0 = motion.local_rotation[f]
-            local_rot1 = motion.local_rotation[f + 1]
-            frame_dof_vel = self._local_rotation_to_dof_vel(local_rot0, local_rot1, dt)
-            frame_dof_vel = frame_dof_vel
-            dof_vels.append(frame_dof_vel)
-        
+            q_pos0 = motion.q_pos[f]
+            q_pos1 = motion.q_pos[f+1]
+            dof_vel = (q_pos1 - q_pos0) / dt
+            dof_vels.append(dof_vel)
+
         dof_vels.append(dof_vels[-1])
         dof_vels = np.array(dof_vels)
-
         return dof_vels
     
     def _local_rotation_to_dof(self, local_rot):
@@ -281,7 +312,8 @@ class MotionLib():
             elif (joint_size == 1):
                 joint_q = local_rot[:, body_id]
                 joint_theta, joint_axis = quat_to_angle_axis(joint_q)
-                joint_theta = joint_theta * joint_axis[..., 1] # assume joint is always along y axis
+                joint_theta = joint_theta * joint_axis[..., JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
+                #TODO: l5vd5
 
                 joint_theta = normalize_angle(joint_theta)
                 dof_pos[:, joint_offset] = joint_theta
@@ -315,7 +347,7 @@ class MotionLib():
             elif (joint_size == 1):
                 assert(joint_size == 1)
                 joint_vel = local_vel[body_id]
-                dof_vel[joint_offset] = joint_vel[1] # assume joint is always along y axis
+                dof_vel[joint_offset] = joint_vel[JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
 
             else:
                 print("Unsupported joint type")

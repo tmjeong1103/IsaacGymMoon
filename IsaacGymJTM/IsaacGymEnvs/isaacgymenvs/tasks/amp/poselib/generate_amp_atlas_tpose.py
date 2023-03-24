@@ -28,6 +28,7 @@
 
 
 import torch
+import os
 
 from poselib.core.rotation3d import *
 from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState
@@ -39,7 +40,7 @@ It then generates a zero rotation pose, and adjusts the pose into a T-Pose.
 """
 
 # import MJCF file
-xml_path = "../../../../assets/mjcf/atlas_v5.xml"
+xml_path = os.path.join(os.path.dirname(__file__), "../../../../assets/mjcf/atlas_v5_m/atlas_v5.xml")
 skeleton = SkeletonTree.from_mjcf(xml_path)
 
 # generate zero rotation pose
@@ -52,8 +53,8 @@ zero_pose = SkeletonState.zero_pose(skeleton)
 # )
 
 # adjust pose into a T Pose
-translation = zero_pose.root_translation
-translation += torch.tensor([0, 0, 0.875])
+# translation = zero_pose.root_translation
+# translation += torch.tensor([0, 0, 0.875])
 
 # save and visualize T-pose
 zero_pose.to_file("data/atlas_tpose.npy")
