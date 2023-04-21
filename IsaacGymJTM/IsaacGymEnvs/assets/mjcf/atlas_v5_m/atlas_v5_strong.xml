@@ -267,14 +267,14 @@
             <body name="l_uglut" pos="0 0.089 0">
                 <inertial pos="0.00529262 -0.00344732 0.00313046" quat="0.999122 -7.72169e-005 0.0419028 -0.000305187" mass="1.959" diaginertia="0.000745109 0.000688179 0.000410071" />
                 <!-- joint 19 -->
-                <joint name="l_leg_hpz" axis="0 0 1" range="-0.174358 0.786794" stiffness="900" damping="30" armature=".02"/>
+                <joint name="l_leg_hpz" axis="0 0 1" range="-0.174358 0.786794" stiffness="5000" damping="300" armature=".02"/>
                 <geom class="viz" mesh="l_uglut"/>
                 <geom type="box" size="0.025 0.05 0.05" pos="0.01 0.005 0" quat="0.965694 0.259684 0 0" />
                 <!-- <geom type="cylinder" size="0.019841 0.040421" pos="0 0 0" /> -->
                 <body name="l_lglut" pos="0 0 0">
                     <inertial pos="0.0133341 0.0170484 -0.0312052" quat="0.353465 0.600383 0.388609 0.602981" mass="0.898" diaginertia="0.00133867 0.000995812 0.000690275" />
                     <!-- joint 20 -->
-                    <joint name="l_leg_hpx" axis="1 0 0" range="-0.523599 0.523599" stiffness="900" damping="30" armature=".02"/>
+                    <joint name="l_leg_hpx" axis="1 0 0" range="-0.523599 0.523599" stiffness="5000" damping="300" armature=".02"/>
                     <geom class="viz" mesh="l_lglut"/>
                     <geom type="box" size="0.0625 0.025 0.04" pos="0.015 0.026 -0.028" />
                     <!-- <geom type="cylinder" size="0.0200969 0.030153" pos="0.05 0.027488 -0.067" quat="0.707107 0.707107 0 0" />
@@ -283,7 +283,7 @@
                     <body name="l_uleg" pos="0.05 0.0225 -0.066">
                         <inertial pos="0 0 -0.21" mass="8.204" diaginertia="0.09 0.09 0.02" />
                         <!-- joint 21 -->
-                        <joint name="l_leg_hpy" axis="0 1 0" range="-1.61234 0.65764" stiffness="1800" damping="30" armature=".02"/>
+                        <joint name="l_leg_hpy" axis="0 1 0" range="-1.61234 0.65764" stiffness="5000" damping="300" armature=".02"/>
                         <geom class="viz" mesh="l_uleg"/>
                         <!-- <geom type="cylinder" size="0.09 0.075" pos="-0.0199 0.00585 -0.122" />
                         <geom type="cylinder" size="0.07 0.075" pos="-0.032 -0.005 -0.224" quat="0.988771 0 -0.149438 0" />
@@ -293,20 +293,20 @@
                         <body name="l_lleg" pos="-0.05 0 -0.374">
                             <inertial pos="0.001 0 -0.187" quat="0.999751 0 0.0223266 0" mass="4.515" diaginertia="0.0771341 0.076 0.00986594" />
                             <!-- joint 22 -->
-                            <joint name="l_leg_kny" axis="0 1 0" range="0 2.35637" stiffness="1800" damping="30" armature=".02"/>
+                            <joint name="l_leg_kny" axis="0 1 0" range="0 2.35637" stiffness="5000" damping="300" armature=".02"/>
                             <geom class="viz" mesh="l_lleg"/>
                             <!-- <geom type="cylinder" size="0.07 0.2" pos="0.02 0.00295 -0.182" quat="0.99875 0 0.0499792 0" /> -->
                             <body name="l_talus" pos="0 0 -0.422">
                                 <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.125" diaginertia="1.30101e-005 1.01674e-005 8.42775e-006" />
                                 <!-- joint 23 -->
-                                <joint name="l_leg_aky" axis="0 1 0" range="-1 0.7" stiffness="1800" damping="20" armature=".01"/>
+                                <joint name="l_leg_aky" axis="0 1 0" range="-1 0.7" stiffness="5000" damping="200" armature=".01"/>
                                 <geom class="viz" mesh="l_talus"/>
                                 <!-- <geom type="cylinder" size="0.010181 0.014771" pos="0 0 0" quat="0.707107 0 0.707107 0" />
                                 <geom type="cylinder" size="0.010348 0.0050295" pos="0 0 0" quat="0.707107 0.707107 0 0" /> -->
                                 <body name="l_foot" pos="0 0 0">
                                     <inertial pos="0.027 0 -0.067" quat="0 0.707107 0 0.707107" mass="2.41" diaginertia="0.008 0.007 0.002" />
                                     <!-- joint 24 -->
-                                    <joint name="l_leg_akx" axis="1 0 0" range="-0.8 0.8" stiffness="600" damping="20" armature=".01"/>
+                                    <joint name="l_leg_akx" axis="1 0 0" range="-0.8 0.8" stiffness="5000" damping="200" armature=".01"/>
                                     <geom class="viz" mesh="l_foot"/>
                                     <geom type="box" size="0.1135 0.0669435 0.025" pos="0.023 0 -0.049119" />
                                     <geom type="box" size="0.05 0.04 0.01" pos="0.1225 0 -0.0641" />
@@ -319,14 +319,14 @@
             <body name="r_uglut" pos="0 -0.089 0">
                 <inertial pos="0.00529262 0.00344732 0.00313046" quat="0.999122 7.72169e-005 0.0419028 0.000305187" mass="1.959" diaginertia="0.000745109 0.000688179 0.000410071" />
                 <!-- joint 25 -->
-                <joint name="r_leg_hpz" axis="0 0 1" range="-0.786794 0.174358" stiffness="900" damping="30" armature=".02"/>
+                <joint name="r_leg_hpz" axis="0 0 1" range="-0.786794 0.174358" stiffness="5000" damping="300" armature=".02"/>
                 <geom class="viz" mesh="r_uglut"/>
                 <geom type="box" size="0.025 0.05 0.05" pos="0.01 -0.005 0" quat="0.965694 -0.259684 0 0" />
                 <!-- <geom type="cylinder" size="0.019841 0.040421" pos="0 0 0" /> -->
                 <body name="r_lglut" pos="0 0 0">
                     <inertial pos="0.0133341 -0.0170484 -0.0312052" quat="0.602981 0.388609 0.600383 0.353465" mass="0.898" diaginertia="0.00133867 0.000995812 0.000690275" />
                     <!-- joint 26 -->
-                    <joint name="r_leg_hpx" axis="1 0 0" range="-0.523599 0.523599" stiffness="900" damping="30" armature=".02"/>
+                    <joint name="r_leg_hpx" axis="1 0 0" range="-0.523599 0.523599" stiffness="5000" damping="300" armature=".02"/>
                     <geom class="viz" mesh="r_lglut"/>
                     <geom type="box" size="0.0625 0.025 0.04" pos="0.015 -0.026 -0.028" />
                     <!-- <geom type="cylinder" size="0.0200969 0.030153" pos="0.05 -0.027488 -0.067" quat="0.707107 0.707107 0 0" />
@@ -335,7 +335,7 @@
                     <body name="r_uleg" pos="0.05 -0.0225 -0.066">
                         <inertial pos="0 0 -0.21" mass="8.204" diaginertia="0.09 0.09 0.02" />
                         <!-- joint 27 -->
-                        <joint name="r_leg_hpy" axis="0 1 0" range="-1.61234 0.65764" stiffness="1800" damping="30" armature=".02"/>
+                        <joint name="r_leg_hpy" axis="0 1 0" range="-1.61234 0.65764" stiffness="5000" damping="300" armature=".02"/>
                         <geom class="viz" mesh="r_uleg"/>
                         <!-- <geom type="cylinder" size="0.09 0.075" pos="-0.0199 -0.00585 -0.122" />
                         <geom type="cylinder" size="0.07 0.075" pos="-0.032 0.005 -0.224" quat="0.988771 0 -0.149438 0" />
@@ -345,20 +345,20 @@
                         <body name="r_lleg" pos="-0.05 0 -0.374">
                             <inertial pos="0.001 0 -0.187" quat="0.999751 0 0.0223266 0" mass="4.515" diaginertia="0.0771341 0.076 0.00986594" />
                             <!-- joint 28 -->
-                            <joint name="r_leg_kny" axis="0 1 0" range="0 2.35637" stiffness="1800" damping="30" armature=".02"/>
+                            <joint name="r_leg_kny" axis="0 1 0" range="0 2.35637" stiffness="5000" damping="300" armature=".02"/>
                             <geom class="viz" mesh="r_lleg"/>
                             <!-- <geom type="cylinder" size="0.07 0.2" pos="0.02 -0.00295 -0.182" quat="0.99875 0 0.0499792 0" /> -->
                             <body name="r_talus" pos="0 0 -0.422">
                                 <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.125" diaginertia="1.30101e-005 1.01674e-005 8.42775e-006" />
                                 <!-- joint 29 -->
-                                <joint name="r_leg_aky" axis="0 1 0" range="-1 0.7" stiffness="1800" damping="20" armature=".01"/>
+                                <joint name="r_leg_aky" axis="0 1 0" range="-1 0.7" stiffness="5000" damping="200" armature=".01"/>
                                 <geom class="viz" mesh="r_talus"/>
                                 <!-- <geom type="cylinder" size="0.010181 0.014771" pos="0 0 0" quat="0.707107 0 0.707107 0" />
                                 <geom type="cylinder" size="0.010348 0.0050295" pos="0 0 0" quat="0.707107 0.707107 0 0" /> -->
                                 <body name="r_foot" pos="0 0 0">
                                     <inertial pos="0.027 0 -0.067" quat="0 0.707107 0 0.707107" mass="2.41" diaginertia="0.008 0.007 0.002" />
                                     <!-- joint 30 -->
-                                    <joint name="r_leg_akx" axis="1 0 0" range="-0.8 0.8" stiffness="600" damping="20" armature=".01"/>
+                                    <joint name="r_leg_akx" axis="1 0 0" range="-0.8 0.8" stiffness="5000" damping="200" armature=".01"/>
                                     <geom class="viz" mesh="r_foot"/>
                                     <geom type="box" size="0.1135 0.0669435 0.025" pos="0.023 0 -0.049119" />
                                     <geom type="box" size="0.05 0.04 0.01" pos="0.1225 0 -0.0641" />
