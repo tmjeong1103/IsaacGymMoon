@@ -89,7 +89,7 @@ class AtlasAMPBase(VecTask):
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
         dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
         sensor_tensor = self.gym.acquire_force_sensor_tensor(self.sim)
-        rigid_body_state = self.gym.acquire_rigid_body_state_tensor(self.sim)
+        rigid_body_state = self.gym.acquire_rigid_body_state_tensor(self.sim) # 공과 겹침
         contact_force_tensor = self.gym.acquire_net_contact_force_tensor(self.sim)
 
         sensors_per_env = 2
@@ -103,7 +103,7 @@ class AtlasAMPBase(VecTask):
         self.gym.refresh_rigid_body_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
 
-        self._root_states = gymtorch.wrap_tensor(actor_root_state)
+        self._root_states = gymtorch.wrap_tensor(actor_root_state)#[::2].contiguous()
         self._initial_root_states = self._root_states.clone()
         self._initial_root_states[:, 7:13] = 0
 
@@ -121,11 +121,16 @@ class AtlasAMPBase(VecTask):
         self._initial_dof_vel = torch.zeros_like(self._dof_vel, device=self.device, dtype=torch.float)
         
         self._rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)
-        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 0:3]
-        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 3:7]
-        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 7:10]
-        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 10:13]
-        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies, 3)
+
+        # l5vd5 collision
+        num_balls=0
+        # only a humanoid (exclude balls)
+        self._rigid_body_state = self._rigid_body_state.view(self.num_envs, self.num_bodies+num_balls, 13)#[:, :self.num_bodies, 0:3]
+        self._rigid_body_pos = self._rigid_body_state[:, :, 0:3]#[:, :self.num_bodies, 0:3]
+        self._rigid_body_rot = self._rigid_body_state[:, :, 3:7]#[:, :self.num_bodies, 3:7]
+        self._rigid_body_vel = self._rigid_body_state[:, :, 7:10]#[:, :self.num_bodies, 7:10]
+        self._rigid_body_ang_vel = self._rigid_body_state[:, :, 10:13]#[:, :self.num_bodies, 10:13]
+        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies+num_balls, 3)#[:, :self.num_bodies, :]
         
         self._terminate_buf = torch.ones(self.num_envs, device=self.device, dtype=torch.long)
         
@@ -196,14 +201,33 @@ class AtlasAMPBase(VecTask):
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         humanoid_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
 
+        # create ball asset
+        # asset_root = os.path.join(os.path.dirname(__file__), "../../../assets")
+        # asset_file = "urdf/ball.urdf"
+        # asset_options = gymapi.AssetOptions()
+
+        # asset_options.disable_gravity = True
+        # print("Loading asset '%s' from '%s'" % (asset_file, asset_root))
+        # ball_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+        # self.num_bodies_ball = self.gym.get_asset_rigid_body_count(ball_asset)
+        # self.num_dof_ball = self.gym.get_asset_dof_count(ball_asset)
+        # self.num_joints_ball = self.gym.get_asset_joint_count(ball_asset)
+
+        # create static box asset
+        # asset_options.fix_base_link = True
+        # asset_box = self.gym.create_box(self.sim, 0.5, 0.1, 0.5, gymapi.AssetOptions())
+
+
         actuator_props = self.gym.get_asset_actuator_properties(humanoid_asset)
         motor_efforts = [prop.motor_effort for prop in actuator_props]
+        
         # l5vd5
         # for prop in actuator_props:
         #     prop.kp = 1000
         # for prop in actuator_props:
         #     prop.kv = 10
         # l5vd5
+
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "r_foot") # modified for Atlas
         left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "l_foot")   # modified for Atlas
@@ -230,6 +254,8 @@ class AtlasAMPBase(VecTask):
         self.envs = []
         self.dof_limits_lower = []
         self.dof_limits_upper = []
+        self.ball_hanldes = []
+        self.box_handles = []
         
         for i in range(self.num_envs):
             # create env instance
@@ -239,6 +265,12 @@ class AtlasAMPBase(VecTask):
             contact_filter = 0
             handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
 
+            # l5vd5 collision
+            pose = gymapi.Transform()
+            pose.r = gymapi.Quat(0, 0, 0, 1)
+            # ball_handle = self.gym.create_actor(env_ptr, ball_asset, pose, None)
+            # box_handle = self.gym.create_actor(env_ptr, asset_box, pose, None)
+
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
             for j in range(self.num_bodies):
@@ -247,6 +279,9 @@ class AtlasAMPBase(VecTask):
 
             self.envs.append(env_ptr)
             self.humanoid_handles.append(handle)
+            # l5vd5 collision
+            # self.ball_handles.append(ball_handle)
+            # self.box_handles.append(box_handle)
 
             if (self._pd_control):
                 dof_prop = self.gym.get_asset_dof_properties(humanoid_asset)
@@ -301,7 +336,11 @@ class AtlasAMPBase(VecTask):
                 lim_low[dof_offset] = curr_low
                 lim_high[dof_offset] =  curr_high
 
+        
         self._pd_action_offset = 0.5 * (lim_high + lim_low)
+        # TODO: fix hard coding (hip x) l5vd5
+        self._pd_action_offset[25] -= 0.3
+        self._pd_action_offset[19] += 0.3
         self._pd_action_scale = 0.5 * (lim_high - lim_low)
         self._pd_action_offset = to_torch(self._pd_action_offset, device=self.device)
         self._pd_action_scale = to_torch(self._pd_action_scale, device=self.device)
@@ -320,6 +359,8 @@ class AtlasAMPBase(VecTask):
         return
 
     def _refresh_sim_tensors(self):
+        # TODO: cuda error
+        # an illegal memory access was encountered
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
@@ -558,13 +599,13 @@ def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_id
     terminated = torch.zeros_like(reset_buf)
 
     if (enable_early_termination):
-        masked_contact_buf = contact_buf.clone()
-        masked_contact_buf[:, contact_body_ids, :] = 0
-        fall_contact = torch.any(masked_contact_buf > 0.1, dim=-1)
-        fall_contact = torch.any(fall_contact, dim=-1)
+        masked_contact_buf = contact_buf.clone() # (4096, 31, 3)
+        masked_contact_buf[:, contact_body_ids, :] = 0 # masking contact body ids (foot, ...)
+        fall_contact = torch.any(masked_contact_buf > 0.1, dim=-1) # check body has fallen
+        fall_contact = torch.any(fall_contact, dim=-1) # get fall env
 
         body_height = rigid_body_pos[..., 2]
-        # print(body_height)
+        
         fall_height = body_height < termination_height
         fall_height[:, contact_body_ids] = False
         fall_height = torch.any(fall_height, dim=-1)
