@@ -177,7 +177,7 @@ class AtlasAMP(AtlasAMPBase):
         root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos \
                = self._motion_lib.get_motion_state(motion_ids, motion_times)
         # TODO l5vd5: to prevent from penetration
-        root_pos[:,2] += 0.10
+        root_pos[:,2] += 0.15
         self._set_env_state(env_ids=env_ids, 
                             root_pos=root_pos, 
                             root_rot=root_rot, 
@@ -239,7 +239,7 @@ class AtlasAMP(AtlasAMPBase):
         self._hist_amp_obs_buf[env_ids] = amp_obs_demo.view(self._hist_amp_obs_buf[env_ids].shape)
         return
     
-    def _set_env_state(self, env_ids, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel):
+    def _set_env_state(self, env_ids, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, collision_test=True):
         self._root_states[env_ids, 0:3] = root_pos
         self._root_states[env_ids, 3:7] = root_rot
         self._root_states[env_ids, 7:10] = root_vel
@@ -249,6 +249,16 @@ class AtlasAMP(AtlasAMPBase):
         self._dof_vel[env_ids] = dof_vel
 
         env_ids_int32 = env_ids.to(dtype=torch.int32)
+
+        # if collision_test:
+        #     asset_options = gymapi.AssetOptions()
+        #     asset_options.armature = 0.001
+        #     asset_options.fix_base_link = True
+        #     asset_options.thickness = 0.002
+
+        #     asset_options.mesh_normal_mode = gymapi.COMPUTE_PER_VERTEX
+        #     self.gym.create_box(self.sim, 0.1, 0.1, 0.1, asset_options)
+
         self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), 
                                                     gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
         self.gym.set_dof_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._dof_state),
