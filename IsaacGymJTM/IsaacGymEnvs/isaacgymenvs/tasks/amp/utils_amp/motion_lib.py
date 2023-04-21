@@ -165,10 +165,11 @@ class MotionLib():
         key_pos = (1.0 - blend_exp) * key_pos0 + blend_exp * key_pos1
         
         local_rot = slerp(local_rot0, local_rot1, torch.unsqueeze(blend, axis=-1))
-        # TODO: l5vd5 qpos
-        dof_pos = (1.0 - blend_exp) * local_qpos0 + blend_exp * local_qpos1
 
-        # dof_pos = self._local_rotation_to_dof(local_rot)
+        dof_pos = self._local_rotation_to_dof(local_rot)
+
+        # TODO: l5vd5 qpos
+        dof_pos = (1.0 - blend) * local_qpos0 + blend * local_qpos1
 
         return root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos
 
