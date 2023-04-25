@@ -1,0 +1,4 @@
+*.dae
+*.so
+*.pyc
+isaacgym/python/build/

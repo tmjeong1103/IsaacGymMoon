@@ -264,7 +264,7 @@ def main():
     target_motion = SkeletonMotion.from_skeleton_state(new_sk_state, fps=target_motion.fps)
 
     # need to convert some joints from 3D to 1D (e.g. elbows and knees)
-    # target_motion = project_joints(target_motion)
+    target_motion = project_joints(target_motion)
 
     # move the root so that the feet are on the ground
     local_rotation = target_motion.local_rotation
