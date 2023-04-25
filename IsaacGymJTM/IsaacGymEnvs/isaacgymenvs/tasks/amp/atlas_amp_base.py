@@ -262,7 +262,7 @@ class AtlasAMPBase(VecTask):
             env_ptr = self.gym.create_env(
                 self.sim, lower, upper, num_per_row
             )
-            contact_filter = 0
+            contact_filter = -1
             handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
 
             # l5vd5 collision
@@ -416,6 +416,7 @@ class AtlasAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+        print(self.gym.get_elapsed_time(self.sim))
 
         if (self._pd_control):
             # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
