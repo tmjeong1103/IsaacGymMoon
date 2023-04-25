@@ -31,7 +31,7 @@ from typing import Dict, Any, Tuple
 import gym
 from gym import spaces
 
-from isaacgym import gymtorch, gymapi
+from isaacgym import gymtorch, gymapi, gymutil
 from isaacgym.torch_utils import to_torch
 from isaacgym.gymutil import get_property_setter_map, get_property_getter_map, get_default_setter_args, apply_random_samples, check_buckets, generate_random_samples
 
@@ -309,6 +309,23 @@ class VecTask(Env):
 
         # step physics and render each frame
         for i in range(self.control_freq_inv):
+            self.gym.clear_lines(self.viewer)
+            net_contact_force_tensor = self.gym.acquire_net_contact_force_tensor(self.sim)
+            net_contact_force_tensor = gymtorch.wrap_tensor(net_contact_force_tensor).view(self.num_envs, self.num_bodies,3)[0,:,:]
+            joint_pos = self.gym.acquire_rigid_body_state_tensor(self.sim)
+            joint_pos = gymtorch.wrap_tensor(joint_pos).view(self.num_envs, self.num_bodies, 13)[0,:,0:3]
+            for i, (p1, p2) in enumerate(zip(joint_pos, net_contact_force_tensor)):
+                # print(self.gym.get_joint_name(self.envs[0], i))
+                # if torch.all(p2 == 0):
+                #     continue
+                p1 = p1.cpu().numpy()
+                p2 = p2.cpu().numpy() / 1000
+                
+                p2 = gymapi.Vec3(p1[0] + p2[0], p1[1] + p2[1], p1[2] + p2[2])
+                p1 = gymapi.Vec3(p1[0], p1[1], p1[2])
+                color = gymapi.Vec3(1., 1., 1.)
+                gymutil.draw_line(p1, p2, color, self.gym, self.viewer, self.envs[0])
+            # self.gym.draw_env_rigid_contacts(self.viewer, self.envs[0], gymapi.Vec3(1., 1., 1.), 1.,  True)
             self.render()
             self.gym.simulate(self.sim)
 
