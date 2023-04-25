@@ -1,4 +1,4 @@
-*.dae
-*.so
 *.pyc
+*.pth
+bvh/
 isaacgym/python/build/
