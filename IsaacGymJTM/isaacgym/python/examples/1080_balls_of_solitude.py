@@ -25,6 +25,7 @@ import numpy as np
 from isaacgym import gymutil
 from isaacgym import gymapi
 from math import sqrt
+import os
 
 # initialize gym
 gym = gymapi.acquire_gym()
@@ -33,7 +34,7 @@ gym = gymapi.acquire_gym()
 args = gymutil.parse_arguments(
     description="Collision Filtering: Demonstrates filtering of collisions within and between environments",
     custom_parameters=[
-        {"name": "--num_envs", "type": int, "default": 36, "help": "Number of environments to create"},
+        {"name": "--num_envs", "type": int, "default": 2, "help": "Number of environments to create"},
         {"name": "--all_collisions", "action": "store_true", "help": "Simulate all collisions"},
         {"name": "--no_collisions", "action": "store_true", "help": "Ignore all collisions"}])
 
@@ -51,7 +52,7 @@ elif args.physics_engine == gymapi.SIM_PHYSX:
     sim_params.physx.num_threads = args.num_threads
     sim_params.physx.use_gpu = args.use_gpu
 
-sim_params.use_gpu_pipeline = False
+sim_params.use_gpu_pipeline = True
 if args.use_gpu_pipeline:
     print("WARNING: Forcing CPU pipeline.")
 
@@ -71,9 +72,12 @@ if viewer is None:
     quit()
 
 # load ball asset
-asset_root = "../../assets"
+asset_root = os.path.join(os.path.dirname(__file__), "../../assets")
 asset_file = "urdf/ball.urdf"
 asset = gym.load_asset(sim, asset_root, asset_file, gymapi.AssetOptions())
+
+# asset_file = "mjcf/nv_ant.xml"
+# asset_ant = gym.load_asset(sim, asset_root, asset_file, gymapi.AssetOptions())
 
 # set up the env grid
 num_envs = args.num_envs
@@ -107,6 +111,7 @@ for i in range(num_envs):
     ball_spacing = 2.5 * radius
     min_coord = -0.5 * (n - 1) * ball_spacing
     y = min_coord+4
+    # ahandle = gym.create_actor(env, asset_ant, pose, None, 0, 1)
     while n > 0:
         z = min_coord
         for j in range(n):

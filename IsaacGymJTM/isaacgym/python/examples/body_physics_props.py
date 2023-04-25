@@ -22,7 +22,7 @@ presents the following:
 
 from isaacgym import gymutil
 from isaacgym import gymapi
-
+import os
 # initialize gym
 gym = gymapi.acquire_gym()
 
@@ -75,6 +75,7 @@ envs = []
 box_handles = []
 actor_handles = []
 
+# l5vd5
 # create box assets w/ varying densities (measured in kg/m^3)
 box_size = 0.2
 box_densities = [8., 32., 1024.]
@@ -92,7 +93,7 @@ asset_options.density = 100.
 asset_capsule = gym.create_capsule(sim, 0.2, 0.2, asset_options)
 
 # create ball asset with gravity disabled
-asset_root = "../../assets"
+asset_root = os.path.join(os.path.dirname(__file__), "../../assets")
 asset_file = "urdf/ball.urdf"
 asset_options = gymapi.AssetOptions()
 asset_options.disable_gravity = True

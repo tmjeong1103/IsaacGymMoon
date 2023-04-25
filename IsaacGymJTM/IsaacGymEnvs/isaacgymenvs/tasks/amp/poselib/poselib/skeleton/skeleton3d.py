@@ -1066,12 +1066,14 @@ class SkeletonState(Serializable):
             target_tpose.root_translation,
             rotation_to_target_skeleton,
             scale_to_target_skeleton,
-            #source_skeleton_tree=source_tpose.skeleton_tree
+            source_skeleton_tree=source_tpose.skeleton_tree
         )
 
 
 class SkeletonMotion(SkeletonState):
-    def __init__(self, tensor_backend, skeleton_tree, is_local, fps, q_pos, *args, **kwargs):
+    def __init__(self, tensor_backend, skeleton_tree, is_local, fps, 
+                 q_pos,
+                *args, **kwargs):
         self._fps = fps
         self._q_pos = q_pos
         super().__init__(tensor_backend, skeleton_tree, is_local, *args, **kwargs)

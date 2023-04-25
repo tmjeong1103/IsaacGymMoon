@@ -22,7 +22,7 @@
 	<default>
 		<site type="sphere" size="0.005"/>
 		<joint limited="true" damping="0.1" armature="0.01" type="hinge" pos="0 0 0"/>
-		<geom contype="0" conaffinity="1" friction="0.7 0.1 0.1" rgba="0.5 0.6 0.7 1" margin="0.001" group="0" />
+		<geom condim="1" solimp=".9 .99 .003" solref=".015 1" contype="0" conaffinity="1" friction="0.7 0.1 0.1" rgba="0.5 0.6 0.7 1" margin="0.001" group="0" />
 		<motor ctrlrange="-.95 .95"/>
 		<default class="viz">
 			<geom contype="0" conaffinity="0" group="1" type="mesh" rgba=".6 .6 .7 1"/>

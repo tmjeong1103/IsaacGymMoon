@@ -34,6 +34,7 @@ from tasks.humanoid_amp import HumanoidAMP
 # Mappings from strings to environments
 isaacgym_task_map = {
     "AtlasAMP": AtlasAMP,
+    "AtlasAMP2": AtlasAMP,
     "Atlas": Atlas,
     "Humanoid": Humanoid,
     "HumanoidAMP": HumanoidAMP

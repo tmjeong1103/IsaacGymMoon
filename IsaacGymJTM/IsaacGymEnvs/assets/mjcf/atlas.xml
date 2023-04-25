@@ -121,7 +121,7 @@
 						<!-- l5vd5 -->
 						<body name="l_clav" pos="0.024 0.221 0.289" >
 							<inertial pos="0.014 0.058 0.029" quat="0.137950 0.693520 -0.137950 0.693520" mass="2.369" diaginertia="0.007 0.006414 0.003586" />
-							<joint name="l_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="2000"/>
+							<joint name="l_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="200"/>
 							<geom group="1" type="mesh" rgba = "0.1 0.1 0.1 1" contype="0" conaffinity="0" pos="-0.000934 0.001692 0.069242" quat="-0.414459 0.573156 -0.415293 0.572056" mesh="l_clav" />
 							<!-- <geom type="cylinder" pos="0 0.0697 0.0261" quat="0.707107 0 0.707107 0" size="0.045 0.07625"  colmask="0 2"/>
 							<geom type="box" pos="-0.005 -0.0074 -0.0538" quat="0.866025 0.500001 0 0" size="0.065 0.075 0.025"  colmask="0 2"/> -->
@@ -152,7 +152,7 @@
 											<body name="l_lfarm" pos="0 0 0">
                                                 <inertial pos="0.00017 -0.02515 0.00163" quat="0.5 0.5 -0.5 0.5" mass="0.648" diaginertia="0.000825 0.000764 0.000429" />
                                                 <!-- joint 10 -->
-                                                <joint name="l_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="500" damping="15" armature=".015"/>
+                                                <joint name="l_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="50" damping="15" armature=".015"/>
 												<geom group="1" type="mesh" rgba = "0.1 0.1 0.1 1" contype="0" conaffinity="0" mesh="l_hand" />
 												<!-- <geom group="1" rgba = "0.1 0.1 0.1 1" contype="0" pos="0.000654 -0.018685 -0.001301" quat="0.707069 0.707067 0.007393 0.007393" mesh="l_farm" /> -->
 												<body name="l_hand" pos="0 0.058 0" >
@@ -190,7 +190,7 @@
 						</body> -->
 						<body name="r_clav" pos="0.024 -0.221 0.289" >
 							<inertial pos="0.014 -0.058 0.029" quat="-0.137950 0.693520 0.137950 0.693520" mass="2.369" diaginertia="0.007 0.006414 0.003586" />
-							<joint name="r_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 -0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="2000"/>
+							<joint name="r_arm_usy" type="hinge" pos="0 0 0" axis="0 0.500000 -0.866025" range="-1.9635 1.9635" user="0 0.5" stiffness="200"/>
 							<geom group="1" type="mesh" rgba = "0.1 0.1 0.1 1" contype="0" conaffinity="0" pos="-0.000934 -0.001693 0.069243" quat="0.414472 0.573149 0.415305 0.572044" mesh="r_clav" />
 							<!--geom type="cylinder" pos="0 -0.0697 0.0261" quat="0.707107 0 0.707107 0" size="0.045 0.07625" />
 							<geom type="box" pos="-0.005 0.0074 -0.0538" quat="0.866025 -0.500001 0 0" size="0.065 0.075 0.025" /-->
@@ -221,7 +221,7 @@
 											<body name="r_lfarm" pos="0 0 0">
                                                 <inertial pos="0.00017 -0.02515 0.00163" quat="0.5 0.5 -0.5 0.5" mass="0.648" diaginertia="0.000825 0.000764 0.000429" />
                                                 <!-- joint 17 -->
-                                                <joint name="r_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="500" damping="15" armature=".015"/>
+                                                <joint name="r_arm_wrx" axis="1 0 0" range="-1.7628 1.7628" stiffness="50" damping="15" armature=".015"/>
 												<geom group="1" type="mesh" rgba = "0.1 0.1 0.1 1" contype="0" conaffinity="0" mesh="r_hand" />
 												<body name="r_hand" pos="0 -0.058 0" >
 													<inertial pos="0 -0.093 0" quat="0.707107 0.707107 0 0" mass="2.263" diaginertia="0.01 0.01 0.002" />
@@ -276,7 +276,7 @@
 								<geom type="cylinder" pos="0 0 0" quat="0.707107 0.707107 0 0" size="0.010348 0.005030" /-->
 								<body name="l_foot" pos="0 0 0"  user ="-6007">
 									<inertial pos="0.027 0 -0.067" quat="0 0.707107 0 0.707107" mass="0.867" diaginertia="0.004007 0.003504 0.002" />
-									<joint name="l_leg_lax" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.436 0.436" stiffness="2000" />
+									<joint name="l_leg_lax" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.436 0.436" stiffness="200" />
 									<geom group="1" type="mesh" rgba = "0.1 0.1 0.1 1" contype="0" conaffinity="0" mesh="l_foot" />
 									<geom type="box" pos="0.048 0 -0.056119" size="0.13 0.062443 0.025" />
 									<site name="r_foot_target" pos="0.4 -0.08 -0.05"/>
