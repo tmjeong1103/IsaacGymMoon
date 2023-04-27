@@ -1,3 +1,33 @@
+# Copyright (c) 2018-2022, NVIDIA Corporation
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+import numpy as np
 import os
 import torch
 
@@ -22,7 +52,7 @@ DOF_OFFSETS     = [0, 1, 2, 3,
                     24, 25, 26, 27, 28, 29, 30]  # joint number offset of each body
 NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 30    #from mjcf file (atlas_v5.xml actuator)
-NUM_ACTORS_PER_ENVS = 3 # Added from JTM, 2 actors per envs
+
 
 KEY_BODY_NAMES = ["r_hand", "l_hand", "r_foot", "l_foot"]
 
@@ -73,26 +103,9 @@ class AtlasAMPBase(VecTask):
         self.gym.refresh_rigid_body_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
 
-        # Added from JTM, Global state per environment
-        self._root_tensor = gymtorch.wrap_tensor(actor_root_state)
-        self._root_states = self._root_tensor
-
-        # Added from JTM, Set actor indices
-        self.actor_indices = torch.arange(NUM_ACTORS_PER_ENVS * self.num_envs, dtype=torch.long, device=self.device).view(self.num_envs, NUM_ACTORS_PER_ENVS)
-        self.humanoid_ids = self.actor_indices[:,0]
-        self.ball_ids = self.actor_indices[:,1]
-        self.box_ids = self.actor_indices[:,2]
-
-        # Added from JTM, Set actor states
-        self.humanoid_states = self._root_states[self.humanoid_ids]
-        self.ball_states = self._root_states[self.ball_ids]
-        self.box_states = self._root_states[self.box_ids]
-
-        # Added from JTM, Initial root state
+        self._root_states = gymtorch.wrap_tensor(actor_root_state)#[::2].contiguous()
         self._initial_root_states = self._root_states.clone()
         self._initial_root_states[:, 7:13] = 0
-        self._ball_buffer = self._initial_root_states.clone()
-        self._box_buffer = self._initial_root_states.clone()
 
         # create some wrapper tensors for different slices
         self._dof_state = gymtorch.wrap_tensor(dof_state_tensor)
@@ -109,14 +122,16 @@ class AtlasAMPBase(VecTask):
         
         self._rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)
 
-        # Added from JTM, Set rigid body states
-        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 0:3]
-        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 3:7]
-        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 7:10]
-        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 10:13]
-
-        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies, 3)[:,:self.num_bodies-2,:]
-
+        # l5vd5 collision
+        num_balls=0
+        # only a humanoid (exclude balls)
+        self._rigid_body_state = self._rigid_body_state.view(self.num_envs, self.num_bodies+num_balls, 13)#[:, :self.num_bodies, 0:3]
+        self._rigid_body_pos = self._rigid_body_state[:, :, 0:3]#[:, :self.num_bodies, 0:3]
+        self._rigid_body_rot = self._rigid_body_state[:, :, 3:7]#[:, :self.num_bodies, 3:7]
+        self._rigid_body_vel = self._rigid_body_state[:, :, 7:10]#[:, :self.num_bodies, 7:10]
+        self._rigid_body_ang_vel = self._rigid_body_state[:, :, 10:13]#[:, :self.num_bodies, 10:13]
+        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies+num_balls, 3)#[:, :self.num_bodies, :]
+        
         self._terminate_buf = torch.ones(self.num_envs, device=self.device, dtype=torch.long)
         
         if self.viewer != None:
@@ -186,21 +201,32 @@ class AtlasAMPBase(VecTask):
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         humanoid_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
 
-        # Added from JTM, Setup up ball & Create ball asset
-        ball_radius = 0.11 # Soccer ball has ~ 11 cm radius.
-        ball_options = gymapi.AssetOptions()
-        ball_options.density = 100.27 # Soccer ball has 410~450g weight.
-        ball_asset = self.gym.create_sphere(self.sim, ball_radius, ball_options)
+        # create ball asset
+        # asset_root = os.path.join(os.path.dirname(__file__), "../../../assets")
+        # asset_file = "urdf/ball.urdf"
+        # asset_options = gymapi.AssetOptions()
 
-        # Added from JTM, Setup up box & Create box asset
-        box_size = 0.2
-        box_options = gymapi.AssetOptions()
-        box_options.density = 1000.0 # 1kg
-        box_asset = self.gym.create_box(self.sim, box_size, box_size, box_size, box_options)
+        # asset_options.disable_gravity = True
+        # print("Loading asset '%s' from '%s'" % (asset_file, asset_root))
+        # ball_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+        # self.num_bodies_ball = self.gym.get_asset_rigid_body_count(ball_asset)
+        # self.num_dof_ball = self.gym.get_asset_dof_count(ball_asset)
+        # self.num_joints_ball = self.gym.get_asset_joint_count(ball_asset)
+
+        # create static box asset
+        # asset_options.fix_base_link = True
+        # asset_box = self.gym.create_box(self.sim, 0.5, 0.1, 0.5, gymapi.AssetOptions())
 
 
         actuator_props = self.gym.get_asset_actuator_properties(humanoid_asset)
         motor_efforts = [prop.motor_effort for prop in actuator_props]
+        
+        # l5vd5
+        # for prop in actuator_props:
+        #     prop.kp = 1000
+        # for prop in actuator_props:
+        #     prop.kv = 10
+        # l5vd5
 
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "r_foot") # modified for Atlas
@@ -214,9 +240,7 @@ class AtlasAMPBase(VecTask):
         self.motor_efforts = to_torch(motor_efforts, device=self.device)
 
         self.torso_index = 0
-        # self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)
-        # Added for JTM, ball asset add
-        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset) + self.gym.get_asset_rigid_body_count(ball_asset) + self.gym.get_asset_rigid_body_count(box_asset)
+        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)
         self.num_dof = self.gym.get_asset_dof_count(humanoid_asset)
         self.num_joints = self.gym.get_asset_joint_count(humanoid_asset)
 
@@ -227,13 +251,11 @@ class AtlasAMPBase(VecTask):
         self.start_rotation = torch.tensor([start_pose.r.x, start_pose.r.y, start_pose.r.z, start_pose.r.w], device=self.device)
 
         self.humanoid_handles = []
-
-        # Added for JTM, object handles
-        self.obj_handles = []
-
         self.envs = []
         self.dof_limits_lower = []
         self.dof_limits_upper = []
+        self.ball_hanldes = []
+        self.box_handles = []
         
         for i in range(self.num_envs):
             # create env instance
@@ -246,6 +268,8 @@ class AtlasAMPBase(VecTask):
             # l5vd5 collision
             pose = gymapi.Transform()
             pose.r = gymapi.Quat(0, 0, 0, 1)
+            # ball_handle = self.gym.create_actor(env_ptr, ball_asset, pose, None)
+            # box_handle = self.gym.create_actor(env_ptr, asset_box, pose, None)
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
@@ -255,23 +279,9 @@ class AtlasAMPBase(VecTask):
 
             self.envs.append(env_ptr)
             self.humanoid_handles.append(handle)
-
-            # Added for JTM, Set up ball, create ball asset
-            ball_pose = gymapi.Transform()
-            ball_pose.p.x = 3
-            ball_pose.p.y = 0
-            ball_pose.p.z = 0.6
-            ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "ball", i, contact_filter, 0)
-            self.obj_handles.append(ball_handle)
-
-            # Added for JTM, Set up box, create box asset
-            box_pose = gymapi.Transform()
-            box_pose.p.x = 2
-            box_pose.p.y = 0
-            box_pose.p.z = 0.5
-            box_handle = self.gym.create_actor(env_ptr, box_asset, box_pose, "box", i, contact_filter, 0)
-            self.obj_handles.append(box_handle)
-
+            # l5vd5 collision
+            # self.ball_handles.append(ball_handle)
+            # self.box_handles.append(box_handle)
 
             if (self._pd_control):
                 dof_prop = self.gym.get_asset_dof_properties(humanoid_asset)
@@ -372,16 +382,12 @@ class AtlasAMPBase(VecTask):
 
     def _compute_humanoid_obs(self, env_ids=None):
         if (env_ids is None):
-            # root_states = self._root_states
-            # Added from JTM, to fix the issue of the humanoid_ids not being defined
-            root_states = self._root_states[self.humanoid_ids]
+            root_states = self._root_states
             dof_pos = self._dof_pos
             dof_vel = self._dof_vel
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
         else:
-            # root_states = self._root_states[env_ids]
-            # Added from JTM, to fix the issue of the humanoid_ids not being defined
-            root_states = self._root_states[self.humanoid_ids[env_ids]]
+            root_states = self._root_states[env_ids]
             dof_pos = self._dof_pos[env_ids]
             dof_vel = self._dof_vel[env_ids]
             key_body_pos = self._rigid_body_pos[env_ids][:, self._key_body_ids, :]

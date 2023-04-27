@@ -39,11 +39,11 @@ checkpoint: '' #'runs/AtlasAMP/nn/AtlasAMP_1700.pth'
 multi_gpu: False
 
 # disables rendering
-headless: True
+headless: False
 
 # set default task and default training config based on task
 defaults:
-    - task: HumanoidAMP
+    - task: AtlasAMP
     - train: ${task}PPO
     - hydra/job_logging: disabled
 
