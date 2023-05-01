@@ -15,7 +15,7 @@ from gym import spaces
 from isaacgym import gymapi
 from isaacgym import gymtorch
 
-from .amp.atlas_amp_base import AtlasAMPBase, dof_to_obs    # modified for Atlas
+from .amp.atlas_amp_obj_base import AtlasObjAMPBase, dof_to_obs  # Added from JTM, Atlas with objects  
 from .amp.utils_amp import gym_util
 from .amp.utils_amp.motion_lib import MotionLib
 
@@ -26,7 +26,7 @@ from isaacgymenvs.utils.torch_jit_utils import *
 # modified for Atlas
 NUM_AMP_OBS_PER_STEP = 85 # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 
-class AtlasAMP(AtlasAMPBase):
+class AtlasObjAMP(AtlasObjAMPBase):
 
     class StateInit(Enum):
         Default = 0
@@ -38,7 +38,7 @@ class AtlasAMP(AtlasAMPBase):
         self.cfg = cfg
 
         state_init = cfg["env"]["stateInit"]
-        self._state_init = AtlasAMP.StateInit[state_init]
+        self._state_init = AtlasObjAMP.StateInit[state_init]
         self._hybrid_init_prob = cfg["env"]["hybridInitProb"]
         self._num_amp_obs_steps = cfg["env"]["numAMPObsSteps"]
         assert(self._num_amp_obs_steps >= 2)
@@ -131,12 +131,12 @@ class AtlasAMP(AtlasAMPBase):
 
     # modified for Atlas
     def _reset_actors(self, env_ids):
-        if (self._state_init == AtlasAMP.StateInit.Default):
+        if (self._state_init == AtlasObjAMP.StateInit.Default):
             self._reset_default(env_ids)
-        elif (self._state_init == AtlasAMP.StateInit.Start
-              or self._state_init == AtlasAMP.StateInit.Random):
+        elif (self._state_init == AtlasObjAMP.StateInit.Start
+              or self._state_init == AtlasObjAMP.StateInit.Random):
             self._reset_ref_state_init(env_ids)
-        elif (self._state_init == AtlasAMP.StateInit.Hybrid):
+        elif (self._state_init == AtlasObjAMP.StateInit.Hybrid):
             self._reset_hybrid_state_init(env_ids)
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
@@ -159,7 +159,6 @@ class AtlasAMP(AtlasAMPBase):
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
         self._reset_balls(env_ids)
-        self._reset_boxs(env_ids)
         self._reset_default_env_ids = env_ids
         return
 
@@ -168,10 +167,10 @@ class AtlasAMP(AtlasAMPBase):
         num_envs = env_ids.shape[0]
         motion_ids = self._motion_lib.sample_motions(num_envs)
         
-        if (self._state_init == AtlasAMP.StateInit.Random
-            or self._state_init == AtlasAMP.StateInit.Hybrid):
+        if (self._state_init == AtlasObjAMP.StateInit.Random
+            or self._state_init == AtlasObjAMP.StateInit.Hybrid):
             motion_times = self._motion_lib.sample_time(motion_ids)
-        elif (self._state_init == AtlasAMP.StateInit.Start):
+        elif (self._state_init == AtlasObjAMP.StateInit.Start):
             motion_times = np.zeros(num_envs)
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
@@ -261,21 +260,11 @@ class AtlasAMP(AtlasAMPBase):
         
         # Added from JTM
         self._reset_balls(env_ids)
-        self._reset_boxs(env_ids)
         return
-    
-    # Added from JTM
+
     def _reset_balls(self, env_ids):
         env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
         self._root_states[self.ball_ids[env_ids], :] = self._ball_buffer[self.ball_ids[env_ids], :]
-        # reference
-        #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
-                                                     gymtorch.unwrap_tensor(env_ball_ids_int32), len(env_ball_ids_int32))
-    # Added from JTM
-    def _reset_boxs(self, env_ids):
-        env_ball_ids_int32 = self.box_ids[env_ids].to(dtype=torch.int32)
-        self._root_states[self.box_ids[env_ids], :] = self._box_buffer[self.box_ids[env_ids], :]
         # reference
         #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
         self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
