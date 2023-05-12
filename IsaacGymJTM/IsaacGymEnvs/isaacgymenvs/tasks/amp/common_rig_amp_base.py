@@ -325,9 +325,6 @@ class CommonRigAMPBase(VecTask):
 
         
         self._pd_action_offset = 0.5 * (lim_high + lim_low)
-        # TODO: fix hard coding (hip x) l5vd5
-        # self._pd_action_offset[25] -= 0.3
-        # self._pd_action_offset[19] += 0.3
         self._pd_action_scale = 0.5 * (lim_high - lim_low)
         self._pd_action_offset = to_torch(self._pd_action_offset, device=self.device)
         self._pd_action_scale = to_torch(self._pd_action_scale, device=self.device)
@@ -382,6 +379,8 @@ class CommonRigAMPBase(VecTask):
             dof_pos = self._dof_pos[env_ids]
             dof_vel = self._dof_vel[env_ids]
             key_body_pos = self._rigid_body_pos[env_ids][:, self._key_body_ids, :]
+        
+        ## TODO: yoon0_0
         
         obs = compute_humanoid_observations(root_states, dof_pos, dof_vel,
                                             key_body_pos, self._local_root_obs)
