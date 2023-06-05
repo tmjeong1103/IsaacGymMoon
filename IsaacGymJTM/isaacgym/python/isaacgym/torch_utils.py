@@ -182,10 +182,19 @@ def quat_from_euler_xyz(roll, pitch, yaw):
     cp = torch.cos(pitch * 0.5)
     sp = torch.sin(pitch * 0.5)
 
+    # Rotation: axis order
+    # ZYX
     qw = cy * cr * cp + sy * sr * sp
     qx = cy * sr * cp - sy * cr * sp
     qy = cy * cr * sp + sy * sr * cp
     qz = sy * cr * cp - cy * sr * sp
+
+    # XYZ
+    # yoon0-0
+    # qw = cy * cr * cp - sy * sr * sp
+    # qx = cy * sr * cp + sy * cr * sp
+    # qy = cy * cr * sp - sy * sr * cp
+    # qz = sy * cr * cp + cy * sr * sp
 
     return torch.stack([qx, qy, qz, qw], dim=-1)
 
