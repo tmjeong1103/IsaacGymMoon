@@ -309,6 +309,7 @@ class VecTask(Env):
 
         # step physics and render each frame
         for i in range(self.control_freq_inv):
+            # yoon0_0 : view contact
             self.gym.clear_lines(self.viewer)
             net_contact_force_tensor = self.gym.acquire_net_contact_force_tensor(self.sim)
             net_contact_force_tensor = gymtorch.wrap_tensor(net_contact_force_tensor).view(self.num_envs, self.num_bodies,3)[0,:,:]
@@ -326,6 +327,14 @@ class VecTask(Env):
                 color = gymapi.Vec3(1., 1., 1.)
                 gymutil.draw_line(p1, p2, color, self.gym, self.viewer, self.envs[0])
             # self.gym.draw_env_rigid_contacts(self.viewer, self.envs[0], gymapi.Vec3(1., 1., 1.), 1.,  True)
+
+            # yoon0_0: save axis angle
+            # print(self.gym.get_elapsed_time(self.sim))
+            axis_angle = self._get_dof_axis_angle(self._dof_pos)
+            self.axis_angle_list.append(axis_angle[0].tolist())
+            if len(self.axis_angle_list) == 200:
+                print('full')
+
             self.render()
             self.gym.simulate(self.sim)
 
