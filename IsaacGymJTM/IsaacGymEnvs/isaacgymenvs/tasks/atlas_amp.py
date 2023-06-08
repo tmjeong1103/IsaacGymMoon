@@ -141,6 +141,8 @@ class AtlasAMP(AtlasAMPBase):
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
 
+        self._reset_obstacle(env_ids)
+
         self.progress_buf[env_ids] = 0
         self.reset_buf[env_ids] = 0
         self._terminate_buf[env_ids] = 0
@@ -158,8 +160,6 @@ class AtlasAMP(AtlasAMPBase):
         self.gym.set_dof_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._dof_state),
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
-        self._reset_balls(env_ids)
-        self._reset_boxs(env_ids)
         self._reset_default_env_ids = env_ids
         return
 
@@ -260,26 +260,38 @@ class AtlasAMP(AtlasAMPBase):
                                                     gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
         
         # Added from JTM
-        self._reset_balls(env_ids)
-        self._reset_boxs(env_ids)
+        # self._reset_balls(env_ids)
+        # self._reset_boxs(env_ids)
         return
-    
+    def _reset_obstacle(self, env_ids):
+        env_obstacle_ids_int32 = torch.cat([self.box_ids[env_ids],self.ball_ids[env_ids]]).to(dtype=torch.int32)
+        self._root_states[self.ball_ids[env_ids], :] = self._ball_buffer[self.ball_ids[env_ids], :]
+        self._root_states[self.box_ids[env_ids], :] = self._box_buffer[self.box_ids[env_ids], :]
+        self._root_states[self.ball_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.ball_ids[env_ids], 0:3]) * 5 # velocity
+        self._root_states[self.box_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.box_ids[env_ids], 0:3]) * 5 # velocity
+        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
+                                                gymtorch.unwrap_tensor(env_obstacle_ids_int32), len(env_obstacle_ids_int32))
+
     # Added from JTM
     def _reset_balls(self, env_ids):
         env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
         self._root_states[self.ball_ids[env_ids], :] = self._ball_buffer[self.ball_ids[env_ids], :]
+        self._root_states[self.ball_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.ball_ids[env_ids], 0:3]) * 10# velocity
+
         # reference
         #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
-                                                     gymtorch.unwrap_tensor(env_ball_ids_int32), len(env_ball_ids_int32))
+
+        return env_ball_ids_int32
+    
     # Added from JTM
     def _reset_boxs(self, env_ids):
-        env_ball_ids_int32 = self.box_ids[env_ids].to(dtype=torch.int32)
+        env_box_ids_int32 = self.box_ids[env_ids].to(dtype=torch.int32)
         self._root_states[self.box_ids[env_ids], :] = self._box_buffer[self.box_ids[env_ids], :]
+        self._root_states[self.box_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.box_ids[env_ids], 0:3]) * 10# velocity
+
         # reference
         #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
-                                                     gymtorch.unwrap_tensor(env_ball_ids_int32), len(env_ball_ids_int32))
+        return env_box_ids_int32
 
     def _update_hist_amp_obs(self, env_ids=None):
         if (env_ids is None):
