@@ -1117,6 +1117,9 @@ class SkeletonMotion(SkeletonState):
         """ q position """
         return self._q_pos
 
+    def set_q_pos(self, q_pos):
+        self._q_pos = q_pos
+
     @property
     def time_delta(self):
         """ time between two adjacent frames """

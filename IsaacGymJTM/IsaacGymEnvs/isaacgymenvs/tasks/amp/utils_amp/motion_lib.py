@@ -52,7 +52,7 @@ class MotionLib():
         self._num_dof = num_dofs
         self._key_body_ids = key_body_ids
         self._device = device
-        self._load_motions(motion_file)
+        self._load_motions_GRP(motion_file)
 
         self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
 
@@ -228,6 +228,62 @@ class MotionLib():
         print("Loaded {:d} motions with a total length of {:.3f}s.".format(num_motions, total_len))
 
         return
+    
+    def _load_motions_GRP(self, motion_file):
+        self._motions = []
+        self._motion_lengths = []
+        self._motion_weights = []
+        self._motion_fps = []
+        self._motion_dt = []
+        self._motion_num_frames = []
+        self._motion_files = []
+
+        total_len = 0.0
+
+        motion_files, motion_weights = self._fetch_motion_files(motion_file)
+        # num_motion_files = len(motion_files)
+        sampled_trajs = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../assets/amp/motions/VAAI_GRP2.npy"))
+        for f in range(sampled_trajs.shape[0]):
+            curr_file = motion_files[0]
+            print("Loading {:d}/{:d} motion files: {:s}".format(f + 1, sampled_trajs.shape[0], curr_file))
+            curr_motion = SkeletonMotion.from_file(curr_file)
+            curr_motion.set_q_pos(sampled_trajs[f])
+            motion_fps = curr_motion.fps
+            curr_dt = 1.0 / motion_fps
+
+            num_frames = curr_motion.tensor.shape[0]
+            curr_len = 1.0 / motion_fps * (num_frames - 1)
+
+            self._motion_fps.append(motion_fps)
+            self._motion_dt.append(curr_dt)
+            self._motion_num_frames.append(num_frames)
+ 
+            curr_dof_vels = self._compute_motion_dof_vels(curr_motion)
+            curr_motion.dof_vels = curr_dof_vels
+
+            self._motions.append(curr_motion)
+            self._motion_lengths.append(curr_len)
+            
+            curr_weight = motion_weights[0]
+            self._motion_weights.append(curr_weight)
+            self._motion_files.append(curr_file)
+
+
+        self._motion_lengths = np.array(self._motion_lengths)
+        self._motion_weights = np.array(self._motion_weights)
+        self._motion_weights /= np.sum(self._motion_weights)
+
+        self._motion_fps = np.array(self._motion_fps)
+        self._motion_dt = np.array(self._motion_dt)
+        self._motion_num_frames = np.array(self._motion_num_frames)
+
+        num_motions = self.num_motions()
+        total_len = self.get_total_length()
+
+        print("Loaded {:d} motions with a total length of {:.3f}s.".format(num_motions, total_len))
+
+        return
+
 
     def _fetch_motion_files(self, motion_file):
         ext = os.path.splitext(motion_file)[1]
