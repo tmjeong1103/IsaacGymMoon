@@ -43,6 +43,9 @@ class CommonRigAMPBase(VecTask):
         self._contact_bodies = self.cfg["env"]["contactBodies"]
         self._termination_height = self.cfg["env"]["terminationHeight"]
         self._enable_early_termination = self.cfg["env"]["enableEarlyTermination"]
+        self.num_balls = self.cfg["env"]["num_balls"]
+        self.num_boxs = self.cfg["env"]["num_boxs"]
+        self.num_actors_per_envs = 1 + self.num_balls + self.num_boxs # Added from JTM, 2 actors per envs
 
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
@@ -75,7 +78,7 @@ class CommonRigAMPBase(VecTask):
         self._root_states = self._root_tensor
 
         # Added from JTM, Set actor indices
-        self.actor_indices = torch.arange(NUM_ACTORS_PER_ENVS * self.num_envs, dtype=torch.long, device=self.device).view(self.num_envs, NUM_ACTORS_PER_ENVS)
+        self.actor_indices = torch.arange(self.num_actors_per_envs * self.num_envs, dtype=torch.long, device=self.device).view(self.num_envs, self.num_actors_per_envs)
         self.humanoid_ids = self.actor_indices[:,0]
         # self.ball_ids = self.actor_indices[:,1]
         # self.box_ids = self.actor_indices[:,2]
@@ -107,10 +110,10 @@ class CommonRigAMPBase(VecTask):
         self._rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)
 
         # Added from JTM, Set rigid body states
-        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 0:3]
-        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 3:7]
-        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 7:10]
-        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-NUM_ACTORS_PER_ENVS+1, 10:13]
+        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 0:3]
+        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 3:7]
+        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 7:10]
+        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 10:13]
 
         self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies, 3)[:,:self.num_bodies,:]
 
@@ -170,7 +173,7 @@ class CommonRigAMPBase(VecTask):
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
         asset_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../assets')
-        asset_file = "mjcf/common_rig_strong.xml"    # modified for Atlas
+        asset_file = "mjcf/common_rig_strongrpy.xml"    # modified for Atlas
 
         if "asset" in self.cfg["env"]:
             #asset_root = self.cfg["env"]["asset"].get("assetRoot", asset_root)
@@ -295,6 +298,34 @@ class CommonRigAMPBase(VecTask):
 
         return
 
+    # yoon0_0
+    def _get_dof_axis_angle(self, dof_pos):
+        num_joints = len(DOF_OFFSETS) - 1
+        angle, axis = exp_map_to_angle_axis(dof_pos)
+        axis_angle = torch.zeros((dof_pos.shape[0], num_joints*4))
+
+        _1_dof_axis = [1, 2, 2, 1, 1] # spine, re, le, rk, lk
+        _idx = 0
+        for j in range(num_joints):
+            dof_offset = DOF_OFFSETS[j]
+            dof_size = DOF_OFFSETS[j + 1] - DOF_OFFSETS[j]
+
+            if (dof_size == 3):
+                angle, axis = exp_map_to_angle_axis(dof_pos[:, dof_offset:(dof_offset+dof_size)])
+                axis_angle[:, 4*j:4*j+3] = axis# ZYX rotation order?
+                axis_angle[:, 4*j+3] = angle
+            elif (dof_size == 1):
+                temp_dof_pos = torch.zeros((dof_pos.shape[0], 3))
+                temp_dof_pos[:, _1_dof_axis[_idx]] = dof_pos[:, dof_offset]
+                # axis_angle[:, 3*j:3*j+3] = temp_dof_pos # euler
+                # axis_angle[:, 3*j:3*j+3] = euler_xyz_to_exp_map(axis_angle[:, 3*j], axis_angle[:, 3*j+1], axis_angle[:, 3*j+2]) #ZYX rotation order
+                angle, axis = exp_map_to_angle_axis(temp_dof_pos)
+                axis_angle[:, 4*j:4*j+3] = axis# ZYX rotation order?
+                axis_angle[:, 4*j+3] = angle  
+                _idx += 1
+
+        return axis_angle
+
     def _build_pd_action_offset_scale(self):
         num_joints = len(DOF_OFFSETS) - 1
         
@@ -406,8 +437,6 @@ class CommonRigAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
-        # yoon0
-        # print(self.gym.get_elapsed_time(self.sim))
 
         if (self._pd_control):
             # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
@@ -582,7 +611,7 @@ def compute_humanoid_reward(obs_buf):
     reward = torch.ones_like(obs_buf[:, 0])
     return reward
 
-# @torch.jit.script
+@torch.jit.script
 def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_ids, rigid_body_pos,
                            max_episode_length, enable_early_termination, termination_height):
     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, float, bool, float) -> Tuple[Tensor, Tensor]

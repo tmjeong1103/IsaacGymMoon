@@ -402,7 +402,8 @@ class AtlasObjAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
-        print(self.gym.get_elapsed_time(self.sim))
+        # yoon0_0: elapsed time
+        # print(self.gym.get_elapsed_time(self.sim))
 
         if (self._pd_control):
             # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))

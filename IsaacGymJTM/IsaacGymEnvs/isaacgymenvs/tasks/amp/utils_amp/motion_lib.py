@@ -37,8 +37,8 @@ from isaacgymenvs.utils.torch_jit_utils import *
 
 # TODO l5vd5
 # from tasks.amp.humanoid_amp_base import DOF_BODY_IDS, DOF_OFFSETS
-# from tasks.amp.atlas_amp_base import DOF_BODY_IDS, DOF_OFFSETS
-from tasks.amp.common_rig_amp_base import DOF_BODY_IDS, DOF_OFFSETS
+from tasks.amp.atlas_amp_base import DOF_BODY_IDS, DOF_OFFSETS
+# from tasks.amp.common_rig_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 
 # TODO l5vd5 0: x, 1: y, 2: z (-1??)
 # JOINT_AXIS = [0, 1, 2, 2, 0, 2, 1, 2, 1, 2,
