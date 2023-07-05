@@ -6,6 +6,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 from enum import Enum
+import time
 import numpy as np
 import torch
 import os
@@ -141,8 +142,6 @@ class AtlasAMP(AtlasAMPBase):
         else:
             assert(False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
 
-        self._reset_obstacle(env_ids)
-
         self.progress_buf[env_ids] = 0
         self.reset_buf[env_ids] = 0
         self._terminate_buf[env_ids] = 0
@@ -167,7 +166,9 @@ class AtlasAMP(AtlasAMPBase):
     def _reset_ref_state_init(self, env_ids):
         num_envs = env_ids.shape[0]
         motion_ids = self._motion_lib.sample_motions(num_envs)
-        
+        # yoon0_0
+        # self._reset_obstacle(env_ids=env_ids)
+        self._reset_soccer_ball(env_ids=env_ids)
         if (self._state_init == AtlasAMP.StateInit.Random
             or self._state_init == AtlasAMP.StateInit.Hybrid):
             motion_times = self._motion_lib.sample_time(motion_ids)
@@ -253,6 +254,8 @@ class AtlasAMP(AtlasAMPBase):
 
         # Added from JTM
         env_ids_int32 = self.humanoid_ids[env_ids].to(dtype=torch.int32)
+        # env_obstacle_ids_int32 = torch.cat([self.ball_ids[env_ids],self.box_ids[env_ids]],dim=1).to(dtype=torch.int32)
+        # env_all_ids_int32 = torch.cat([env_ids_int32.reshape(-1, 1),env_obstacle_ids_int32],dim=1).to(dtype=torch.int32).flatten()
 
         self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), 
                                                     gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
@@ -260,17 +263,42 @@ class AtlasAMP(AtlasAMPBase):
                                                     gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
         
         # Added from JTM
+        # Error: sequential reset method got stuck in error
         # self._reset_balls(env_ids)
         # self._reset_boxs(env_ids)
         return
+    
     def _reset_obstacle(self, env_ids):
-        env_obstacle_ids_int32 = torch.cat([self.box_ids[env_ids],self.ball_ids[env_ids]]).to(dtype=torch.int32)
+        env_box_ids_int32 = self.box_ids[env_ids].to(dtype=torch.int32)
+        env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
+        env_obstacle_ids_int32 = torch.cat([self.box_ids[env_ids],self.ball_ids[env_ids]],dim=1).to(dtype=torch.int32).flatten()
         self._root_states[self.ball_ids[env_ids], :] = self._ball_buffer[self.ball_ids[env_ids], :]
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
+        #                                 gymtorch.unwrap_tensor(env_ball_ids_int32), len(env_ball_ids_int32))
+
         self._root_states[self.box_ids[env_ids], :] = self._box_buffer[self.box_ids[env_ids], :]
-        self._root_states[self.ball_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.ball_ids[env_ids], 0:3]) * 5 # velocity
-        self._root_states[self.box_ids[env_ids], 7:10] = (self._root_states[self.humanoid_ids[env_ids], 0:3]-self._root_states[self.box_ids[env_ids], 0:3]) * 5 # velocity
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
+        #                                 gymtorch.unwrap_tensor(env_box_ids_int32), len(env_box_ids_int32))
+
+        if self.num_balls > 0:
+            self._root_states[self.ball_ids[env_ids].flatten(), 7:10] = (self._initial_root_states[self.humanoid_ids[env_ids], 0:3].repeat((self.num_balls,1)).reshape(len(env_ids)*self.num_balls,3)-self._ball_buffer[self.ball_ids[env_ids].flatten(), 0:3]) * 5 # velocity
+        if self.num_boxs > 0:
+            self._root_states[self.box_ids[env_ids].flatten(), 7:10] = (self._initial_root_states[self.humanoid_ids[env_ids], 0:3].repeat((self.num_boxs,1)).reshape(len(env_ids)*self.num_boxs,3)-self._box_buffer[self.ball_ids[env_ids].flatten(), 0:3]) * 5 # velocity
         self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
                                                 gymtorch.unwrap_tensor(env_obstacle_ids_int32), len(env_obstacle_ids_int32))
+
+        # time.sleep(1)
+        # return env_obstacle_ids_int32
+
+    # Added from JTM
+    def _reset_soccer_ball(self, env_ids):
+        env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
+        self._root_states[self.soccer_ball_id[env_ids], :] = self._ball_buffer[self.soccer_ball_id[env_ids], :]
+
+        # reference
+        #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
+
+        return env_ball_ids_int32
 
     # Added from JTM
     def _reset_balls(self, env_ids):

@@ -12,8 +12,8 @@ env:
     enableDebugVis: False
 
     pdControl: True
-    powerScale: 1.0 #1.0
-    controlFrequencyInv: 2 #2 # 30 Hz
+    powerScale: 1.0
+    controlFrequencyInv: 2 # 30 Hz
     stateInit: 'Random'
     hybridInitProb: 0.5
     numAMPObsSteps: 2
@@ -27,6 +27,9 @@ env:
     # these motions should use hyperparameters from HumanoidAMPPPO.yaml
     motion_file: '12_01_walk.npy'
     # motion_file: "forward_jump.npy"
+    is_soccer_task: True
+    num_balls: 0
+    num_boxs: 0
 
     asset:
         assetFileName: 'mjcf/atlas_v5_m/atlas_v5_strong.xml'
