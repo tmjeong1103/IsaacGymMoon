@@ -52,7 +52,7 @@ class MotionLib():
         self._num_dof = num_dofs
         self._key_body_ids = key_body_ids
         self._device = device
-        self._load_motions_GRP(motion_file)
+        self._load_motions(motion_file)
 
         self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
 

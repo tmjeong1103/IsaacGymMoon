@@ -45,7 +45,8 @@ class CommonRigAMPBase(VecTask):
         self._enable_early_termination = self.cfg["env"]["enableEarlyTermination"]
         self.num_balls = self.cfg["env"]["num_balls"]
         self.num_boxs = self.cfg["env"]["num_boxs"]
-        self.num_actors_per_envs = 1 + self.num_balls + self.num_boxs # Added from JTM, 2 actors per envs
+        self.is_soccer_task = self.cfg["env"]["is_soccer_task"]
+        self.num_actors_per_envs = 1 + self.num_balls + self.num_boxs + (1 if self.is_soccer_task else 0) # Added from JTM, 2 actors per envs
 
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
@@ -80,6 +81,9 @@ class CommonRigAMPBase(VecTask):
         # Added from JTM, Set actor indices
         self.actor_indices = torch.arange(self.num_actors_per_envs * self.num_envs, dtype=torch.long, device=self.device).view(self.num_envs, self.num_actors_per_envs)
         self.humanoid_ids = self.actor_indices[:,0]
+        if self.is_soccer_task:
+            self.soccer_ball_id = self.actor_indices[:,self.num_balls+self.num_boxs+1:].flatten()
+
         # self.ball_ids = self.actor_indices[:,1]
         # self.box_ids = self.actor_indices[:,2]
 
@@ -187,10 +191,10 @@ class CommonRigAMPBase(VecTask):
         humanoid_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
 
         # Added from JTM, Setup up ball & Create ball asset
-        # ball_radius = 0.11 # Soccer ball has ~ 11 cm radius.
-        # ball_options = gymapi.AssetOptions()
-        # ball_options.density = 100.27 # Soccer ball has 410~450g weight.
-        # ball_asset = self.gym.create_sphere(self.sim, ball_radius, ball_options)
+        ball_radius = 0.11 # Soccer ball has ~ 11 cm radius.
+        ball_options = gymapi.AssetOptions()
+        ball_options.density = 100.27 # Soccer ball has 410~450g weight.
+        ball_asset = self.gym.create_sphere(self.sim, ball_radius, ball_options)
 
         # # Added from JTM, Setup up box & Create box asset
         # box_size = 0.2
@@ -216,7 +220,7 @@ class CommonRigAMPBase(VecTask):
         self.torso_index = 0
         # self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)
         # Added for JTM, ball asset add
-        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)# + self.gym.get_asset_rigid_body_count(ball_asset) + self.gym.get_asset_rigid_body_count(box_asset)
+        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset) + (1 if self.is_soccer_task else 0)# + self.gym.get_asset_rigid_body_count(ball_asset) + self.gym.get_asset_rigid_body_count(box_asset)
         self.num_dof = self.gym.get_asset_dof_count(humanoid_asset)
         self.num_joints = self.gym.get_asset_joint_count(humanoid_asset)
 
@@ -255,6 +259,15 @@ class CommonRigAMPBase(VecTask):
 
             self.envs.append(env_ptr)
             self.humanoid_handles.append(handle)
+
+            # Soccer ball
+            if self.is_soccer_task:
+                ball_pose = gymapi.Transform()
+                ball_pose.p.x = 5
+                ball_pose.p.y = 0
+                ball_pose.p.z = 0.11
+                soccer_ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "soccer_ball", i, contact_filter, 0)
+                self.obj_handles.append(soccer_ball_handle)
 
             # Added for JTM, Set up ball, create ball asset
             ball_pose = gymapi.Transform()
@@ -387,11 +400,16 @@ class CommonRigAMPBase(VecTask):
 
     def _compute_observations(self, env_ids=None):
         obs = self._compute_humanoid_obs(env_ids)
+        if self.is_soccer_task:
+            soccer_ball_obs = self._compute_soccer_ball_obs(env_ids)
+
 
         if (env_ids is None):
             self.obs_buf[:] = obs
+            self.soccer_ball_obs_buf[:] = soccer_ball_obs
         else:
             self.obs_buf[env_ids] = obs
+            self.soccer_ball_obs_buf[:] = soccer_ball_obs
 
         return
 
@@ -437,6 +455,7 @@ class CommonRigAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+        self.pre_soccer_ball_obs_buf = self.soccer_ball_obs_buf.clone()
 
         if (self._pd_control):
             # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
@@ -606,10 +625,16 @@ def compute_humanoid_observations(root_states, dof_pos, dof_vel, key_body_pos, l
     return obs
 
 @torch.jit.script
-def compute_humanoid_reward(obs_buf):
-    # type: (Tensor) -> Tensor
-    reward = torch.ones_like(obs_buf[:, 0])
-    return reward
+def compute_humanoid_reward(obs_buf, pre_soccer_ball_obs_buf, soccer_ball_obs_buf, init_ball_pos):
+    # type: (Tensor, Tensor, Tensor, Tensor) -> Tensor
+    pre_soccer_ball_x = pre_soccer_ball_obs_buf[:,0]
+    cur_soccer_x = soccer_ball_obs_buf[:,0]
+    forward_soccer_ball = cur_soccer_x - pre_soccer_ball_x
+
+    cur_humanoid_pos = obs_buf[:,0:3]
+    dist = torch.sqrt(torch.sum((init_ball_pos - cur_humanoid_pos)**2,dim=1))
+    # reward = torch.ones_like(obs_buf[:, 0])
+    return torch.exp(-dist) + forward_soccer_ball
 
 @torch.jit.script
 def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_ids, rigid_body_pos,

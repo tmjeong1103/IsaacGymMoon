@@ -241,6 +241,8 @@ class VecTask(Env):
         # allocate buffers
         self.obs_buf = torch.zeros(
             (self.num_envs, self.num_obs), device=self.device, dtype=torch.float)
+        self.soccer_ball_obs_buf = torch.zeros(
+            (self.num_envs, 13), device=self.device, dtype=torch.float)
         self.states_buf = torch.zeros(
             (self.num_envs, self.num_states), device=self.device, dtype=torch.float)
         self.rew_buf = torch.zeros(
@@ -309,7 +311,7 @@ class VecTask(Env):
 
         # step physics and render each frame
         for i in range(self.control_freq_inv):
-            # yoon0_0 : view contact
+            # yoon0_0 : visualize contact
             self.gym.clear_lines(self.viewer)
             net_contact_force_tensor = self.gym.acquire_net_contact_force_tensor(self.sim)
             net_contact_force_tensor = gymtorch.wrap_tensor(net_contact_force_tensor).view(self.num_envs, self.num_bodies,3)[0,:,:]
@@ -330,10 +332,10 @@ class VecTask(Env):
 
             # yoon0_0: save axis angle
             # print(self.gym.get_elapsed_time(self.sim))
-            axis_angle = self._get_dof_axis_angle(self._dof_pos)
-            self.axis_angle_list.append(axis_angle[0].tolist())
-            if len(self.axis_angle_list) == 200:
-                print('full')
+            # axis_angle = self._get_dof_axis_angle(self._dof_pos)
+            # self.axis_angle_list.append(axis_angle[0].tolist())
+            # if len(self.axis_angle_list) == 200:
+            #     print('full')
 
             self.render()
             self.gym.simulate(self.sim)

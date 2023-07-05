@@ -144,6 +144,7 @@ actor_indices = torch.arange(10, dtype=torch.long, device=device)#.view(10, 1)
 actor_root_state = gym.acquire_actor_root_state_tensor(sim)
 _root_states = gymtorch.wrap_tensor(actor_root_state)#[::2].contiguous()
 while not gym.query_viewer_has_closed(viewer):
+    start_time = time.time()
     for i in range(10):
         root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos \
                     = motion_lib.get_motion_state([i], motion_times)
@@ -183,7 +184,9 @@ while not gym.query_viewer_has_closed(viewer):
     # This synchronizes the physics simulation with the rendering rate.
     gym.sync_frame_time(sim)
     # gym.simulate(sim)
-    time.sleep(0.05)
+    end_time = time.time()
+    duration = end_time - start_time
+    time.sleep(max(0.05-duration,0))
     motion_times += 1/20
 
 

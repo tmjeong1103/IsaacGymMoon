@@ -158,8 +158,6 @@ class CommonRigAMP(CommonRigAMPBase):
         self.gym.set_dof_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._dof_state),
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
-        self._reset_balls(env_ids)
-        self._reset_boxs(env_ids)
         self._reset_default_env_ids = env_ids
         return
 
@@ -167,7 +165,9 @@ class CommonRigAMP(CommonRigAMPBase):
     def _reset_ref_state_init(self, env_ids):
         num_envs = env_ids.shape[0]
         motion_ids = self._motion_lib.sample_motions(num_envs)
-        
+        # yoon0_0
+        # self._reset_obstacle(env_ids=env_ids)
+        self._reset_soccer_ball(env_ids=env_ids)
         if (self._state_init == CommonRigAMP.StateInit.Random
             or self._state_init == CommonRigAMP.StateInit.Hybrid):
             motion_times = self._motion_lib.sample_time(motion_ids)
@@ -264,6 +264,16 @@ class CommonRigAMP(CommonRigAMPBase):
         # self._reset_boxs(env_ids)
         return
     
+        # yoon0-0
+    def _reset_soccer_ball(self, env_ids):
+        env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
+        self._root_states[self.soccer_ball_id[env_ids], :] = self._ball_buffer[self.soccer_ball_id[env_ids], :]
+
+        # reference
+        #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
+
+        return env_ball_ids_int32
+
     # Added from JTM
     def _reset_balls(self, env_ids):
         env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
