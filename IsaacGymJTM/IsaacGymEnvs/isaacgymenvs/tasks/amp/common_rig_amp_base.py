@@ -17,7 +17,7 @@ DOF_OFFSETS     = [0, 3, 4, 7, 8, 11,
                    14, 15, 18, 21,
                    24, 25, 28,
                    31, 32, 35]  # joint number offset of each body
-NUM_OBS = 1 + 6 + 3 + 3 + 65 + 35 + 12 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 1 + 6 + 3 + 3 + 65 + 35 + 12 + 13 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 35    #from mjcf file (atlas_v5.xml actuator)
 NUM_ACTORS_PER_ENVS = 1 # Added from JTM, 2 actors per envs
 
@@ -263,7 +263,7 @@ class CommonRigAMPBase(VecTask):
             # Soccer ball
             if self.is_soccer_task:
                 ball_pose = gymapi.Transform()
-                ball_pose.p.x = 5
+                ball_pose.p.x = 9
                 ball_pose.p.y = 0
                 ball_pose.p.z = 0.11
                 soccer_ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "soccer_ball", i, contact_filter, 0)
@@ -404,14 +404,15 @@ class CommonRigAMPBase(VecTask):
         obs = self._compute_humanoid_obs(env_ids)
         if self.is_soccer_task:
             soccer_ball_obs = self._compute_soccer_ball_obs(env_ids)
-
+            obs = torch.cat([obs, soccer_ball_obs],dim=1)
 
         if (env_ids is None):
             self.obs_buf[:] = obs
-            self.soccer_ball_obs_buf[:] = soccer_ball_obs
+            # self.soccer_ball_obs_buf[:] = soccer_ball_obs
         else:
+            
             self.obs_buf[env_ids] = obs
-            self.soccer_ball_obs_buf[:] = soccer_ball_obs
+            # self.soccer_ball_obs_buf[env_ids] = soccer_ball_obs
 
         return
     
