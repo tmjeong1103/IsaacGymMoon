@@ -376,7 +376,7 @@ class CommonRigAMPBase(VecTask):
         return
 
     def _compute_reward(self, actions):
-        self.rew_buf[:] = compute_humanoid_reward(self.obs_buf)
+        self.rew_buf[:] = compute_humanoid_reward(self.obs_buf, self.pre_soccer_ball_obs_buf, self.soccer_ball_obs_buf, self._initial_root_states[self.soccer_ball_id,0:3])
         return
 
     def _compute_reset(self):
@@ -384,6 +384,8 @@ class CommonRigAMPBase(VecTask):
                                                    self._contact_forces, self._contact_body_ids,
                                                    self._rigid_body_pos, self.max_episode_length,
                                                    self._enable_early_termination, self._termination_height)
+        # yoon0-0: compute obstacle reset
+
         return
 
     def _refresh_sim_tensors(self):
@@ -412,6 +414,18 @@ class CommonRigAMPBase(VecTask):
             self.soccer_ball_obs_buf[:] = soccer_ball_obs
 
         return
+    
+    def _compute_soccer_ball_obs(self, env_ids=None):
+        if (env_ids is None):
+            # root_states = self._root_states
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.soccer_ball_id]
+        else:
+            # root_states = self._root_states[env_ids]
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.soccer_ball_id[env_ids]]
+        
+        return root_states
 
     def _compute_humanoid_obs(self, env_ids=None):
         if (env_ids is None):
