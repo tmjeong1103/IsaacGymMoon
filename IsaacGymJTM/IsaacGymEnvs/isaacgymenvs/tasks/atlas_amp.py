@@ -292,13 +292,14 @@ class AtlasAMP(AtlasAMPBase):
 
     # Added from JTM
     def _reset_soccer_ball(self, env_ids):
-        env_ball_ids_int32 = self.ball_ids[env_ids].to(dtype=torch.int32)
+        env_soccer_ball_ids_int32 = self.soccer_ball_id[env_ids].to(dtype=torch.int32)
         self._root_states[self.soccer_ball_id[env_ids], :] = self._ball_buffer[self.soccer_ball_id[env_ids], :]
 
         # reference
         #self._ball_buffer[env_ids,0] = 4.0*torch.rand(len(env_ids), device=self.device) + 2.5
-
-        return env_ball_ids_int32
+        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
+                                                gymtorch.unwrap_tensor(env_soccer_ball_ids_int32), len(env_soccer_ball_ids_int32))
+        return env_soccer_ball_ids_int32
 
     # Added from JTM
     def _reset_balls(self, env_ids):

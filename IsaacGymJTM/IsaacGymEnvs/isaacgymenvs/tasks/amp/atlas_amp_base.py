@@ -268,7 +268,7 @@ class AtlasAMPBase(VecTask):
             # Soccer ball
             if self.is_soccer_task:
                 ball_pose = gymapi.Transform()
-                ball_pose.p.x = 5
+                ball_pose.p.x = 8
                 ball_pose.p.y = 0
                 ball_pose.p.z = 0.11
                 soccer_ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "soccer_ball", i, contact_filter, 0)
@@ -622,14 +622,14 @@ def compute_humanoid_observations(root_states, dof_pos, dof_vel, key_body_pos, l
 @torch.jit.script
 def compute_humanoid_reward(obs_buf, pre_soccer_ball_obs_buf, soccer_ball_obs_buf, init_ball_pos):
     # type: (Tensor, Tensor, Tensor, Tensor) -> Tensor
-    pre_soccer_ball_x = pre_soccer_ball_obs_buf[:,0]
-    cur_soccer_x = soccer_ball_obs_buf[:,0]
-    forward_soccer_ball = cur_soccer_x - pre_soccer_ball_x
+    # pre_soccer_ball_x = pre_soccer_ball_obs_buf[:,0]
+    # cur_soccer_x = soccer_ball_obs_buf[:,0]
+    # forward_soccer_ball = cur_soccer_x - pre_soccer_ball_x
 
-    cur_humanoid_pos = obs_buf[:,0:3]
-    dist = torch.sqrt(torch.sum((init_ball_pos - cur_humanoid_pos)**2,dim=1))
-    # reward = torch.ones_like(obs_buf[:, 0])
-    return torch.exp(-dist) + forward_soccer_ball
+    # cur_humanoid_pos = obs_buf[:,0:3]
+    # dist = torch.sqrt(torch.sum((init_ball_pos - cur_humanoid_pos)**2,dim=1))
+    reward = torch.ones_like(obs_buf[:, 0]) #torch.exp(-dist) + forward_soccer_ball
+    return reward 
 
 @torch.jit.script
 def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_ids, rigid_body_pos,
