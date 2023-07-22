@@ -17,7 +17,7 @@ DOF_OFFSETS     = [0, 3, 4, 7, 8, 11,
                    14, 15, 18, 21,
                    24, 25, 28,
                    31, 32, 35]  # joint number offset of each body
-NUM_OBS = 1 + 6 + 3 + 3 + 65 + 35 + 12 + 13 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
+NUM_OBS = 1 + 6 + 3 + 3 + 65 + 35 + 12 + 3 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 35    #from mjcf file (atlas_v5.xml actuator)
 NUM_ACTORS_PER_ENVS = 1 # Added from JTM, 2 actors per envs
 
@@ -376,7 +376,7 @@ class CommonRigAMPBase(VecTask):
         return
 
     def _compute_reward(self, actions):
-        self.rew_buf[:] = compute_humanoid_reward(self.obs_buf, self.pre_soccer_ball_obs_buf, self.soccer_ball_obs_buf, self._initial_root_states[self.soccer_ball_id,0:3])
+        self.rew_buf[:] = compute_humanoid_reward(self._root_states, self.pre_root_states, self.soccer_ball_id, self.humanoid_ids, self._initial_root_states[self.soccer_ball_id,0:3])
         return
 
     def _compute_reset(self):
@@ -403,7 +403,7 @@ class CommonRigAMPBase(VecTask):
     def _compute_observations(self, env_ids=None):
         obs = self._compute_humanoid_obs(env_ids)
         if self.is_soccer_task:
-            soccer_ball_obs = self._compute_soccer_ball_obs(env_ids)
+            soccer_ball_obs = self._compute_soccer_ball_obs(env_ids)[:,:3]
             obs = torch.cat([obs, soccer_ball_obs],dim=1)
 
         if (env_ids is None):
@@ -470,7 +470,7 @@ class CommonRigAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
-        self.pre_soccer_ball_obs_buf = self.soccer_ball_obs_buf.clone()
+        self.pre_root_states = self._root_states.clone()
 
         if (self._pd_control):
             # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
@@ -639,17 +639,21 @@ def compute_humanoid_observations(root_states, dof_pos, dof_vel, key_body_pos, l
     obs = torch.cat((root_h, root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos), dim=-1)
     return obs
 
+# yoon0-0 TODO: reward tuning
 @torch.jit.script
-def compute_humanoid_reward(obs_buf, pre_soccer_ball_obs_buf, soccer_ball_obs_buf, init_ball_pos):
-    # type: (Tensor, Tensor, Tensor, Tensor) -> Tensor
-    pre_soccer_ball_x = pre_soccer_ball_obs_buf[:,0]
-    cur_soccer_x = soccer_ball_obs_buf[:,0]
-    forward_soccer_ball = cur_soccer_x - pre_soccer_ball_x
+def compute_humanoid_reward(cur_root_state, pre_root_state, soccer_ball_id, humanoid_ids, init_ball_pos):
+    # type: (Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor
+    pre_soccer_ball_x = pre_root_state[soccer_ball_id,0]
+    cur_soccer_x = cur_root_state[soccer_ball_id,0]
+    forward_soccer_ball = torch.where(cur_soccer_x == pre_soccer_ball_x, 0, 1)
 
-    cur_humanoid_pos = obs_buf[:,0:3]
+    cur_humanoid_pos = cur_root_state[humanoid_ids,0:3]
+    hist_humanoid_pos = pre_root_state[humanoid_ids,0:3]
     dist = torch.sqrt(torch.sum((init_ball_pos - cur_humanoid_pos)**2,dim=1))
+    hist_dist = torch.sqrt(torch.sum((init_ball_pos - hist_humanoid_pos)**2,dim=1))
+    dx = dist - hist_dist
     # reward = torch.ones_like(obs_buf[:, 0])
-    return torch.exp(-dist) + forward_soccer_ball
+    return (torch.exp(-(dx))-1) + forward_soccer_ball
 
 @torch.jit.script
 def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_ids, rigid_body_pos,
