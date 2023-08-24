@@ -82,7 +82,6 @@ def launch_rlg_hydra(cfg: DictConfig):
 
     # `create_rlgpu_env` is environment construction function which is passed to RL Games and called internally.
     # We use the helper function here to specify the environment config.
-    # print(omegaconf_to_dict(cfg.task))
     create_rlgpu_env = get_rlgames_env_creator(
         task_config=omegaconf_to_dict(cfg.task),
         task_name=cfg.task_name,

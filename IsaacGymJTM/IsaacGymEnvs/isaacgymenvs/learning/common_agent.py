@@ -188,7 +188,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
             if self.is_rnn:
                 batch_dict = self.play_steps_rnn()
             else:
-                batch_dict = self.play_steps() 
+                batch_dict = self.play_steps() # yoon0-0 : 여기서 배치를 가져옴
 
         play_time_end = time.time()
         update_time_start = time.time()

@@ -40,5 +40,4 @@ isaacgym_task_map = {
     "Atlas": Atlas,
     "Humanoid": Humanoid,
     "HumanoidAMP": HumanoidAMP
-
 }

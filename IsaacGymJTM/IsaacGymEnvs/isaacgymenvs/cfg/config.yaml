@@ -34,16 +34,16 @@ num_subscenes: 4 # Splits the simulation into N physics scenes and runs each one
 # test - if set, run policy in inference mode (requires setting checkpoint to load)
 test: False
 # used to set checkpoint path
-checkpoint: '' #'runs/AtlasAMP/nn/AtlasAMP_1700.pth'
+checkpoint: ''
 # set to True to use multi-gpu horovod training
 multi_gpu: False
 
 # disables rendering
-headless: False
+headless: True
 
 # set default task and default training config based on task
 defaults:
-    - task: AtlasAMP
+    - task: CommonRigAMP # AtlasAMP
     - train: ${task}PPO
     - hydra/job_logging: disabled
 

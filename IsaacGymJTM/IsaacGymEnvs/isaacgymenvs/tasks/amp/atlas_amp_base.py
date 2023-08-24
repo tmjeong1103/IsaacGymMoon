@@ -85,6 +85,7 @@ class AtlasAMPBase(VecTask):
         # self.humanoid_ids = self.actor_indices[:]
         self.humanoid_ids = self.actor_indices[:,0]
         if self.is_soccer_task:
+            self.num_observations = self.num_observations + 3
             self.soccer_ball_id = self.actor_indices[:,self.num_balls+self.num_boxs+1:].flatten()
         self.ball_ids = self.actor_indices[:,1:self.num_balls+1]
         self.box_ids = self.actor_indices[:,self.num_balls+1:]
@@ -448,6 +449,7 @@ class AtlasAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+        # self.pre_obs_buf = self.obs_buf.clone()
         self.pre_soccer_ball_obs_buf = self.soccer_ball_obs_buf.clone()
         # print(self.gym.get_elapsed_time(self.sim))
 

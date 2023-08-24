@@ -167,7 +167,8 @@ class CommonRigAMP(CommonRigAMPBase):
         motion_ids = self._motion_lib.sample_motions(num_envs)
         # yoon0_0
         # self._reset_obstacle(env_ids=env_ids)
-        self._reset_soccer_ball(env_ids=env_ids)
+        if self.is_soccer_task:
+            self._reset_soccer_ball(env_ids=env_ids)
         if (self._state_init == CommonRigAMP.StateInit.Random
             or self._state_init == CommonRigAMP.StateInit.Hybrid):
             motion_times = self._motion_lib.sample_time(motion_ids)
