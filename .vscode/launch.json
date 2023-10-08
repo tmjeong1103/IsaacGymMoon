@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Train",
+            "type": "python",
+            "request": "launch",
+            "program": "IsaacGymJTM/IsaacGymEnvs/isaacgymenvs/train.py",
+            "args": [
+                // "num_envs=2",
+                // "test=True",
+                "task.env.stateInit=Random",
+                // "headless=False",
+                // "checkpoint=IsaacGymJTM/IsaacGymEnvs/isaacgymenvs/runs/AtlasAMP/nn/AtlasAMP_walk.pth",
+                "checkpoint=runs/AtlasAMP/nn/AtlasAMP_walk.pth" // walk well
+                // "task.sim.use_gpu_pipeline=False"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Test",
+            "type": "python",
+            "request": "launch",
+            "program": "IsaacGymJTM/IsaacGymEnvs/isaacgymenvs/train.py",
+            "args": [
+                "num_envs=2",
+                "test=True",
+                "task.env.stateInit=Random",
+                "headless=False",
+                // "checkpoint=IsaacGymJTM/IsaacGymEnvs/isaacgymenvs/runs/AtlasAMP/nn/AtlasAMP_walk.pth",
+                // "checkpoint=runs/AtlasAMP/nn/AtlasAMP_walk.pth" // walk well
+                "checkpoint=runs/CommonRigAMP/nn/CommonRigAMP_3150.pth"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

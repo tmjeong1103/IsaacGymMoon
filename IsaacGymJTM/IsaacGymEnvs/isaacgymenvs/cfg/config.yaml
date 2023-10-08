@@ -1,4 +1,3 @@
-
 # Task name - used to pick the class to load
 task_name: ${task.name}
 # experiment name. defaults to name of training config
@@ -44,13 +43,12 @@ headless: True
 
 # set default task and default training config based on task
 defaults:
-  - task: AtlasAMP
-  - train: ${task}PPO
-  - hydra/job_logging: disabled
+    - task: CommonRigAMP # AtlasAMP
+    - train: ${task}PPO
+    - hydra/job_logging: disabled
 
 # set the directory where the output files get saved
 hydra:
-  output_subdir: null
-  run:
-    dir: .
-
+    output_subdir: null
+    run:
+        dir: .

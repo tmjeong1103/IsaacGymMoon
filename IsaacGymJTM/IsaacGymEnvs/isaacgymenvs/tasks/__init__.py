@@ -30,12 +30,14 @@ from tasks.atlas_amp import AtlasAMP
 from tasks.atlas import Atlas
 from tasks.humanoid import Humanoid
 from tasks.humanoid_amp import HumanoidAMP
+from tasks.common_rig_amp import CommonRigAMP
+
 
 # Mappings from strings to environments
 isaacgym_task_map = {
     "AtlasAMP": AtlasAMP,
+    "CommonRigAMP": CommonRigAMP,
     "Atlas": Atlas,
     "Humanoid": Humanoid,
     "HumanoidAMP": HumanoidAMP
-
 }

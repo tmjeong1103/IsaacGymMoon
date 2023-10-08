@@ -38,14 +38,15 @@ from isaacgymenvs.utils.torch_jit_utils import *
 # TODO l5vd5
 # from tasks.amp.humanoid_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 from tasks.amp.atlas_amp_base import DOF_BODY_IDS, DOF_OFFSETS
+# from tasks.amp.common_rig_amp_base import DOF_BODY_IDS, DOF_OFFSETS
 
 # TODO l5vd5 0: x, 1: y, 2: z (-1??)
-JOINT_AXIS = [2, 1, 0, 1, 2, 0, 1, 0, 1, 0,
-              1, 2, 0, 1, 0, 1, 0, 1, 2, 0,
-              1, 1, 1, 0, 2, 0, 1, 1, 1, 0]
-JOINT_SIGN = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-              1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
-              1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+# JOINT_AXIS = [0, 1, 2, 2, 0, 2, 1, 2, 1, 2,
+#               0, 0, 2, 1, 2, 1, 2, 0, 0, 1,
+#               2, 1, 1, 0, 2, 0, 1, 2, 1, 1, 0, 2, 0, 1, 2]
+# JOINT_SIGN = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+#               1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+#               1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 class MotionLib():
     def __init__(self, motion_file, num_dofs, key_body_ids, device):
         self._num_dof = num_dofs
@@ -165,10 +166,13 @@ class MotionLib():
         key_pos = (1.0 - blend_exp) * key_pos0 + blend_exp * key_pos1
         
         local_rot = slerp(local_rot0, local_rot1, torch.unsqueeze(blend, axis=-1))
-        # TODO: l5vd5 qpos
-        dof_pos = (1.0 - blend_exp) * local_qpos0 + blend_exp * local_qpos1
-
         # dof_pos = self._local_rotation_to_dof(local_rot)
+        local_qpos0 = self._euler_dof_to_angle_axis_dof(local_qpos0)
+        local_qpos1 = self._euler_dof_to_angle_axis_dof(local_qpos1)
+
+        # TODO: l5vd5 qpos
+        
+        dof_pos = (1.0 - blend) * local_qpos0 + blend * local_qpos1
 
         return root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos
 
@@ -224,6 +228,62 @@ class MotionLib():
         print("Loaded {:d} motions with a total length of {:.3f}s.".format(num_motions, total_len))
 
         return
+    
+    def _load_motions_GRP(self, motion_file):
+        self._motions = []
+        self._motion_lengths = []
+        self._motion_weights = []
+        self._motion_fps = []
+        self._motion_dt = []
+        self._motion_num_frames = []
+        self._motion_files = []
+
+        total_len = 0.0
+
+        motion_files, motion_weights = self._fetch_motion_files(motion_file)
+        # num_motion_files = len(motion_files)
+        sampled_trajs = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../assets/amp/motions/VAAI_GRP2.npy"))
+        for f in range(sampled_trajs.shape[0]):
+            curr_file = motion_files[0]
+            print("Loading {:d}/{:d} motion files: {:s}".format(f + 1, sampled_trajs.shape[0], curr_file))
+            curr_motion = SkeletonMotion.from_file(curr_file)
+            curr_motion.set_q_pos(sampled_trajs[f])
+            motion_fps = curr_motion.fps
+            curr_dt = 1.0 / motion_fps
+
+            num_frames = curr_motion.tensor.shape[0]
+            curr_len = 1.0 / motion_fps * (num_frames - 1)
+
+            self._motion_fps.append(motion_fps)
+            self._motion_dt.append(curr_dt)
+            self._motion_num_frames.append(num_frames)
+ 
+            curr_dof_vels = self._compute_motion_dof_vels(curr_motion)
+            curr_motion.dof_vels = curr_dof_vels
+
+            self._motions.append(curr_motion)
+            self._motion_lengths.append(curr_len)
+            
+            curr_weight = motion_weights[0]
+            self._motion_weights.append(curr_weight)
+            self._motion_files.append(curr_file)
+
+
+        self._motion_lengths = np.array(self._motion_lengths)
+        self._motion_weights = np.array(self._motion_weights)
+        self._motion_weights /= np.sum(self._motion_weights)
+
+        self._motion_fps = np.array(self._motion_fps)
+        self._motion_dt = np.array(self._motion_dt)
+        self._motion_num_frames = np.array(self._motion_num_frames)
+
+        num_motions = self.num_motions()
+        total_len = self.get_total_length()
+
+        print("Loaded {:d} motions with a total length of {:.3f}s.".format(num_motions, total_len))
+
+        return
+
 
     def _fetch_motion_files(self, motion_file):
         ext = os.path.splitext(motion_file)[1]
@@ -312,7 +372,7 @@ class MotionLib():
             elif (joint_size == 1):
                 joint_q = local_rot[:, body_id]
                 joint_theta, joint_axis = quat_to_angle_axis(joint_q)
-                joint_theta = joint_theta * joint_axis[..., JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
+                joint_theta = joint_theta * joint_axis[..., 1] # assume joint is always along y axis TODO l5vd5
                 #TODO: l5vd5
 
                 joint_theta = normalize_angle(joint_theta)
@@ -347,10 +407,38 @@ class MotionLib():
             elif (joint_size == 1):
                 assert(joint_size == 1)
                 joint_vel = local_vel[body_id]
-                dof_vel[joint_offset] = joint_vel[JOINT_AXIS[j]] * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
+                dof_vel[joint_offset] = joint_vel[JOINT_AXIS[j]]# * JOINT_SIGN[j] # assume joint is always along y axis TODO l5vd5
 
             else:
                 print("Unsupported joint type")
                 assert(False)
 
         return dof_vel
+    
+    # yoon0_0
+    def _euler_dof_to_angle_axis_dof(self, euler):
+        body_ids = DOF_BODY_IDS
+        dof_offsets = DOF_OFFSETS
+
+        n = euler.shape[0]
+        dof_pos = torch.zeros((n, self._num_dof), dtype=torch.float, device=self._device)
+
+        for j in range(len(body_ids)):
+            body_id = body_ids[j]
+            joint_offset = dof_offsets[j]
+            joint_size = dof_offsets[j + 1] - joint_offset
+
+            if (joint_size == 3):
+                rpy = euler[:,joint_offset:(joint_offset + joint_size)]
+                # joint_quat = quat_from_euler_xyz(rpy[:,0],rpy[:,1],rpy[:,2])
+                joint_exp_map = euler_xyz_to_exp_map(rpy[:,0],rpy[:,1],rpy[:,2])
+                dof_pos[:, joint_offset:(joint_offset + joint_size)] = joint_exp_map
+            elif (joint_size == 1):
+                joint_euler = euler[:,joint_offset]
+                dof_pos[:, joint_offset] = joint_euler
+
+            else:
+                print("Unsupported joint type")
+                assert(False)
+
+        return dof_pos

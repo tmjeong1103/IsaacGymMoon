@@ -181,6 +181,7 @@ class HumanoidAMPBase(VecTask):
             asset_file = self.cfg["env"]["asset"].get("assetFileName", asset_file)
 
         asset_options = gymapi.AssetOptions()
+        # asset_options.fix_base_link = True
         asset_options.angular_damping = 0.01
         asset_options.max_angular_velocity = 100.0
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
@@ -362,6 +363,7 @@ class HumanoidAMPBase(VecTask):
         self.actions = actions.to(self.device).clone()
 
         if (self._pd_control):
+            # self.actions[:,6] = 1.0 # right shoulder up
             pd_tar = self._action_to_pd_targets(self.actions)
             pd_tar_tensor = gymtorch.unwrap_tensor(pd_tar)
             self.gym.set_dof_position_target_tensor(self.sim, pd_tar_tensor)

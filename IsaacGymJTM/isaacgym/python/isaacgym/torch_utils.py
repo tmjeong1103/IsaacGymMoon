@@ -132,7 +132,7 @@ def get_basis_vector(q, v):
     return quat_rotate(q, v)
 
 
-def get_axis_params(value, axis_idx, x_value=0., dtype=np.float, n_dims=3):
+def get_axis_params(value, axis_idx, x_value=0., dtype=np.float64, n_dims=3):
     """construct arguments to `Vec` according to axis index.
     """
     zs = np.zeros((n_dims,))
@@ -182,10 +182,19 @@ def quat_from_euler_xyz(roll, pitch, yaw):
     cp = torch.cos(pitch * 0.5)
     sp = torch.sin(pitch * 0.5)
 
+    # Rotation: axis order
+    # ZYX
     qw = cy * cr * cp + sy * sr * sp
     qx = cy * sr * cp - sy * cr * sp
     qy = cy * cr * sp + sy * sr * cp
     qz = sy * cr * cp - cy * sr * sp
+
+    # XYZ
+    # yoon0-0
+    # qw = cy * cr * cp - sy * sr * sp
+    # qx = cy * sr * cp + sy * cr * sp
+    # qy = cy * cr * sp - sy * sr * cp
+    # qz = sy * cr * cp + cy * sr * sp
 
     return torch.stack([qx, qy, qz, qw], dim=-1)
 

@@ -2,7 +2,7 @@
     "source_motion": "data/cmu_run_motion.npy",
     "target_motion_path": "data/cmu_walk_retarget_to_atlas.npy",
     "source_tpose": "data/cmu_zero_pose.npy",
-    "target_tpose": "data/atlas_tpose.npy",
+    "target_tpose": "data/atlas_v5_zero_pose.npy",
     "joint_mapping": {
         "Hips": "pelvis",
         "LeftUpLeg": "l_uleg",

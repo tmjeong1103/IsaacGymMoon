@@ -1,33 +1,3 @@
-# Copyright (c) 2018-2022, NVIDIA Corporation
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its
-#    contributors may be used to endorse or promote products derived from
-#    this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-import numpy as np
 import os
 import torch
 
@@ -53,7 +23,6 @@ DOF_OFFSETS     = [0, 1, 2, 3,
 NUM_OBS = 1 + 6 + 3 + 3 + 30 + 30 + 12 # [(root_h(z-height):1, root_rot:6, root_vel:3, root_ang_vel:3, dof_pos, dof_vel, key_body_pos]
 NUM_ACTIONS = 30    #from mjcf file (atlas_v5.xml actuator)
 
-
 KEY_BODY_NAMES = ["r_hand", "l_hand", "r_foot", "l_foot"]
 
 class AtlasAMPBase(VecTask):
@@ -76,6 +45,10 @@ class AtlasAMPBase(VecTask):
         self._contact_bodies = self.cfg["env"]["contactBodies"]
         self._termination_height = self.cfg["env"]["terminationHeight"]
         self._enable_early_termination = self.cfg["env"]["enableEarlyTermination"]
+        self.num_balls = self.cfg["env"]["num_balls"]
+        self.num_boxs = self.cfg["env"]["num_boxs"]
+        self.is_soccer_task = self.cfg["env"]["is_soccer_task"]
+        self.num_actors_per_envs = 1 + self.num_balls + self.num_boxs + (1 if self.is_soccer_task else 0) # Added from JTM, 2 actors per envs
 
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
@@ -89,7 +62,7 @@ class AtlasAMPBase(VecTask):
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
         dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
         sensor_tensor = self.gym.acquire_force_sensor_tensor(self.sim)
-        rigid_body_state = self.gym.acquire_rigid_body_state_tensor(self.sim)
+        rigid_body_state = self.gym.acquire_rigid_body_state_tensor(self.sim) # 공과 겹침
         contact_force_tensor = self.gym.acquire_net_contact_force_tensor(self.sim)
 
         sensors_per_env = 2
@@ -103,9 +76,30 @@ class AtlasAMPBase(VecTask):
         self.gym.refresh_rigid_body_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
 
-        self._root_states = gymtorch.wrap_tensor(actor_root_state)
+        # Added from JTM, Global state per environment
+        self._root_tensor = gymtorch.wrap_tensor(actor_root_state)
+        self._root_states = self._root_tensor
+
+        # Added from JTM, Set actor indices
+        self.actor_indices = torch.arange(self.num_actors_per_envs * self.num_envs, dtype=torch.long, device=self.device).view(self.num_envs, self.num_actors_per_envs)
+        # self.humanoid_ids = self.actor_indices[:]
+        self.humanoid_ids = self.actor_indices[:,0]
+        if self.is_soccer_task:
+            self.num_observations = self.num_observations + 3
+            self.soccer_ball_id = self.actor_indices[:,self.num_balls+self.num_boxs+1:].flatten()
+        self.ball_ids = self.actor_indices[:,1:self.num_balls+1]
+        self.box_ids = self.actor_indices[:,self.num_balls+1:]
+
+        # Added from JTM, Set actor states
+        self.humanoid_states = self._root_states[self.humanoid_ids]
+        self.ball_states = self._root_states[self.ball_ids]
+        self.box_states = self._root_states[self.box_ids]
+
+        # Added from JTM, Initial root state
         self._initial_root_states = self._root_states.clone()
         self._initial_root_states[:, 7:13] = 0
+        self._ball_buffer = self._initial_root_states.clone()
+        self._box_buffer = self._initial_root_states.clone()
 
         # create some wrapper tensors for different slices
         self._dof_state = gymtorch.wrap_tensor(dof_state_tensor)
@@ -121,12 +115,16 @@ class AtlasAMPBase(VecTask):
         self._initial_dof_vel = torch.zeros_like(self._dof_vel, device=self.device, dtype=torch.float)
         
         self._rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)
-        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 0:3]
-        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 3:7]
-        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 7:10]
-        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[..., 10:13]
-        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies, 3)
-        
+
+        # Added from JTM, Set rigid body states
+        self._rigid_body_pos = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 0:3]
+        self._rigid_body_rot = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 3:7]
+        self._rigid_body_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 7:10]
+        self._rigid_body_ang_vel = self._rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:self.num_bodies-self.num_actors_per_envs+1, 10:13]
+
+        # humanoid
+        self._contact_forces = gymtorch.wrap_tensor(contact_force_tensor).view(self.num_envs, self.num_bodies, 3)[:,:self.num_bodies-self.num_actors_per_envs+1,:]
+
         self._terminate_buf = torch.ones(self.num_envs, device=self.device, dtype=torch.long)
         
         if self.viewer != None:
@@ -156,6 +154,8 @@ class AtlasAMPBase(VecTask):
         self._reset_actors(env_ids)
         self._refresh_sim_tensors()
         self._compute_observations(env_ids)
+        # self._reset_obstacle(env_ids)
+
         return
 
     def set_char_color(self, col):
@@ -196,14 +196,22 @@ class AtlasAMPBase(VecTask):
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         humanoid_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
 
+        # Added from JTM, Setup up ball & Create ball asset
+        ball_radius = 0.11 # Soccer ball has ~ 11 cm radius.
+        ball_options = gymapi.AssetOptions()
+        ball_options.density = 100.27 # Soccer ball has 410~450g weight.
+        ball_asset = self.gym.create_sphere(self.sim, ball_radius, ball_options)
+
+        # Added from JTM, Setup up box & Create box asset
+        box_size = 0.2
+        box_options = gymapi.AssetOptions()
+        box_options.density = 1000.0 # 1kg
+        box_asset = self.gym.create_box(self.sim, box_size, box_size, box_size, box_options)
+
+
         actuator_props = self.gym.get_asset_actuator_properties(humanoid_asset)
         motor_efforts = [prop.motor_effort for prop in actuator_props]
-        # l5vd5
-        # for prop in actuator_props:
-        #     prop.kp = 1000
-        # for prop in actuator_props:
-        #     prop.kv = 10
-        # l5vd5
+
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "r_foot") # modified for Atlas
         left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "l_foot")   # modified for Atlas
@@ -216,7 +224,9 @@ class AtlasAMPBase(VecTask):
         self.motor_efforts = to_torch(motor_efforts, device=self.device)
 
         self.torso_index = 0
-        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)
+        # self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset)
+        # Added for JTM, ball asset add
+        self.num_bodies = self.gym.get_asset_rigid_body_count(humanoid_asset) + self.num_balls + self.num_boxs + (1 if self.is_soccer_task else 0)# + self.gym.get_asset_rigid_body_count(ball_asset) + self.gym.get_asset_rigid_body_count(box_asset)
         self.num_dof = self.gym.get_asset_dof_count(humanoid_asset)
         self.num_joints = self.gym.get_asset_joint_count(humanoid_asset)
 
@@ -227,6 +237,10 @@ class AtlasAMPBase(VecTask):
         self.start_rotation = torch.tensor([start_pose.r.x, start_pose.r.y, start_pose.r.z, start_pose.r.w], device=self.device)
 
         self.humanoid_handles = []
+
+        # Added for JTM, object handles
+        self.obj_handles = []
+
         self.envs = []
         self.dof_limits_lower = []
         self.dof_limits_upper = []
@@ -236,8 +250,12 @@ class AtlasAMPBase(VecTask):
             env_ptr = self.gym.create_env(
                 self.sim, lower, upper, num_per_row
             )
-            contact_filter = 0
-            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "atlas", i, contact_filter, 0) # modified for Atlas
+            contact_filter = -1
+            handle = self.gym.create_actor(env_ptr, humanoid_asset, start_pose, "common_rig", i, contact_filter, 0) # modified for Atlas
+
+            # l5vd5 collision
+            pose = gymapi.Transform()
+            pose.r = gymapi.Quat(0, 0, 0, 1)
 
             self.gym.enable_actor_dof_force_sensors(env_ptr, handle)
 
@@ -247,6 +265,35 @@ class AtlasAMPBase(VecTask):
 
             self.envs.append(env_ptr)
             self.humanoid_handles.append(handle)
+
+            # Soccer ball
+            if self.is_soccer_task:
+                ball_pose = gymapi.Transform()
+                ball_pose.p.x = 8
+                ball_pose.p.y = 0
+                ball_pose.p.z = 0.11
+                soccer_ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "soccer_ball", i, contact_filter, 0)
+                self.obj_handles.append(soccer_ball_handle)
+
+            # Obstacle
+            # Added for JTM, Set up ball, create ball asset
+            for j in range(self.num_balls):
+                ball_pose = gymapi.Transform()
+                ball_pose.p.x = 3
+                ball_pose.p.y = 0
+                ball_pose.p.z = 0.6 + 0.3*j
+                ball_handle = self.gym.create_actor(env_ptr, ball_asset, ball_pose, "ball", i, contact_filter, 0)
+                self.obj_handles.append(ball_handle)
+
+            # Added for JTM, Set up box, create box asset
+            for j in range(self.num_boxs):
+                box_pose = gymapi.Transform()
+                box_pose.p.x = 2
+                box_pose.p.y = 0
+                box_pose.p.z = 0.5 + 0.4*j
+                box_handle = self.gym.create_actor(env_ptr, box_asset, box_pose, "box", i, contact_filter, 0)
+                self.obj_handles.append(box_handle)
+
 
             if (self._pd_control):
                 dof_prop = self.gym.get_asset_dof_properties(humanoid_asset)
@@ -301,7 +348,11 @@ class AtlasAMPBase(VecTask):
                 lim_low[dof_offset] = curr_low
                 lim_high[dof_offset] =  curr_high
 
+        
         self._pd_action_offset = 0.5 * (lim_high + lim_low)
+        # TODO: fix hard coding (hip x) l5vd5
+        self._pd_action_offset[25] -= 0.3
+        self._pd_action_offset[19] += 0.3
         self._pd_action_scale = 0.5 * (lim_high - lim_low)
         self._pd_action_offset = to_torch(self._pd_action_offset, device=self.device)
         self._pd_action_scale = to_torch(self._pd_action_scale, device=self.device)
@@ -309,7 +360,7 @@ class AtlasAMPBase(VecTask):
         return
 
     def _compute_reward(self, actions):
-        self.rew_buf[:] = compute_humanoid_reward(self.obs_buf)
+        self.rew_buf[:] = compute_humanoid_reward(self.obs_buf, self.pre_soccer_ball_obs_buf, self.soccer_ball_obs_buf, self._ball_buffer[self.soccer_ball_id, 0:3])
         return
 
     def _compute_reset(self):
@@ -320,6 +371,8 @@ class AtlasAMPBase(VecTask):
         return
 
     def _refresh_sim_tensors(self):
+        # TODO: cuda error
+        # an illegal memory access was encountered
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
@@ -331,22 +384,43 @@ class AtlasAMPBase(VecTask):
 
     def _compute_observations(self, env_ids=None):
         obs = self._compute_humanoid_obs(env_ids)
+        if self.is_soccer_task:
+            soccer_ball_obs = self._compute_soccer_ball_obs(env_ids)
 
         if (env_ids is None):
             self.obs_buf[:] = obs
+            self.soccer_ball_obs_buf[:] = soccer_ball_obs
         else:
             self.obs_buf[env_ids] = obs
+            self.soccer_ball_obs_buf[:] = soccer_ball_obs
 
         return
+    
+    def _compute_soccer_ball_obs(self, env_ids=None):
+        if (env_ids is None):
+            # root_states = self._root_states
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.soccer_ball_id]
+        else:
+            # root_states = self._root_states[env_ids]
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.soccer_ball_id[env_ids]]
+        
+        return root_states
+
 
     def _compute_humanoid_obs(self, env_ids=None):
         if (env_ids is None):
-            root_states = self._root_states
+            # root_states = self._root_states
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.humanoid_ids]
             dof_pos = self._dof_pos
             dof_vel = self._dof_vel
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
         else:
-            root_states = self._root_states[env_ids]
+            # root_states = self._root_states[env_ids]
+            # Added from JTM, to fix the issue of the humanoid_ids not being defined
+            root_states = self._root_states[self.humanoid_ids[env_ids]]
             dof_pos = self._dof_pos[env_ids]
             dof_vel = self._dof_vel[env_ids]
             key_body_pos = self._rigid_body_pos[env_ids][:, self._key_body_ids, :]
@@ -375,9 +449,11 @@ class AtlasAMPBase(VecTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+        # self.pre_obs_buf = self.obs_buf.clone()
+        self.pre_soccer_ball_obs_buf = self.soccer_ball_obs_buf.clone()
+        # print(self.gym.get_elapsed_time(self.sim))
 
         if (self._pd_control):
-            # print(gymtorch.wrap_tensor(self.gym.acquire_dof_force_tensor(self.sim)))
             pd_tar = self._action_to_pd_targets(self.actions)
             pd_tar_tensor = gymtorch.unwrap_tensor(pd_tar)
             self.gym.set_dof_position_target_tensor(self.sim, pd_tar_tensor)
@@ -546,10 +622,16 @@ def compute_humanoid_observations(root_states, dof_pos, dof_vel, key_body_pos, l
     return obs
 
 @torch.jit.script
-def compute_humanoid_reward(obs_buf):
-    # type: (Tensor) -> Tensor
-    reward = torch.ones_like(obs_buf[:, 0])
-    return reward
+def compute_humanoid_reward(obs_buf, pre_soccer_ball_obs_buf, soccer_ball_obs_buf, init_ball_pos):
+    # type: (Tensor, Tensor, Tensor, Tensor) -> Tensor
+    # pre_soccer_ball_x = pre_soccer_ball_obs_buf[:,0]
+    # cur_soccer_x = soccer_ball_obs_buf[:,0]
+    # forward_soccer_ball = cur_soccer_x - pre_soccer_ball_x
+
+    # cur_humanoid_pos = obs_buf[:,0:3]
+    # dist = torch.sqrt(torch.sum((init_ball_pos - cur_humanoid_pos)**2,dim=1))
+    reward = torch.ones_like(obs_buf[:, 0]) #torch.exp(-dist) + forward_soccer_ball
+    return reward 
 
 @torch.jit.script
 def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_ids, rigid_body_pos,
@@ -558,13 +640,13 @@ def compute_humanoid_reset(reset_buf, progress_buf, contact_buf, contact_body_id
     terminated = torch.zeros_like(reset_buf)
 
     if (enable_early_termination):
-        masked_contact_buf = contact_buf.clone()
-        masked_contact_buf[:, contact_body_ids, :] = 0
-        fall_contact = torch.any(masked_contact_buf > 0.1, dim=-1)
-        fall_contact = torch.any(fall_contact, dim=-1)
+        masked_contact_buf = contact_buf.clone() # (4096, 31, 3)
+        masked_contact_buf[:, contact_body_ids, :] = 0 # masking contact body ids (foot, ...)
+        fall_contact = torch.any(masked_contact_buf > 0.1, dim=-1) # check body has fallen
+        fall_contact = torch.any(fall_contact, dim=-1) # get fall env
 
         body_height = rigid_body_pos[..., 2]
-        # print(body_height)
+        
         fall_height = body_height < termination_height
         fall_height[:, contact_body_ids] = False
         fall_height = torch.any(fall_height, dim=-1)
